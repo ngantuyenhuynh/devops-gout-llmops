@@ -1,0 +1,40 @@
+name: Build and Push Eval-Orchestrator to GCP
+
+on:
+  push:
+    branches: [ "main" ]
+    paths:
+      - 'src/eval-orchestrator/**' # Chỉ chạy khi có thay đổi trong thư mục này
+
+env:
+  PROJECT_ID: ${{ secrets.GCP_PROJECT_ID }} # Sẽ điền tự động nếu bạn đổi chữ project-id của bạn bên dưới
+  REGION: asia-southeast1
+  REPO_NAME: gout-llmops-repo
+  IMAGE_NAME: eval-orchestrator
+
+jobs:
+  build-and-push:
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v3
+
+    - name: Authenticate to Google Cloud
+      uses: google-github-actions/auth@v1
+      with:
+        credentials_json: '${{ secrets.GCP_CREDENTIALS }}'
+
+    - name: Set up Cloud SDK
+      uses: google-github-actions/setup-gcloud@v1
+
+    - name: Configure Docker to use Google Artifact Registry
+      run: gcloud auth configure-docker ${{ env.REGION }}-docker.pkg.dev
+
+    - name: Build and Push Docker Image
+      run: |
+        # Đổi chữ YOUR_GCP_PROJECT_ID thành tên Project ID của bạn
+        IMAGE_PATH=${{ env.REGION }}-docker.pkg.dev/logical-carver-490713-d8/${{ env.REPO_NAME }}/${{ env.IMAGE_NAME }}
+        
+        cd src/eval-orchestrator
+        docker build -t $IMAGE_PATH:latest -t $IMAGE_PATH:${{ github.sha }} .
+        docker push $IMAGE_PATH --all-tags
