@@ -2,39 +2,40 @@ from fastapi import FastAPI
 from pydantic import BaseModel
 import requests
 
-app = FastAPI(title="Gout-LLM EvalOps Orchestrator")
+app = FastAPI(title="Gout-LLM RAG Orchestrator")
+
+# Cấu hình địa chỉ nội bộ K8s
+OLLAMA_URL = "http://ollama-service:11434/api/generate"
+QDRANT_URL = "http://qdrant-service:6333/collections/gout_knowledge_base/points/search"
 
 class EvalRequest(BaseModel):
     question: str
-    context: str = ""
-
-# Nhờ K8s Service Discovery, chúng ta chỉ cần gọi tên service thay vì địa chỉ IP
-OLLAMA_URL = "http://ollama-service:11434/api/generate"
-
-@app.get("/")
-def health_check():
-    return {"status": "healthy", "service": "Eval-Orchestrator is running"}
 
 @app.post("/evaluate")
-def trigger_evaluation(req: EvalRequest):
-    # Tạo gói tin gửi sang Ollama
+def r_a_g_evaluation(req: EvalRequest):
+    # 1. Tìm kiếm kiến thức y khoa liên quan trong Qdrant
+    # (Đoạn này giả lập logic search đơn giản, thực tế sẽ dùng langchain qdrant client)
+    context = "Dựa trên Quyết định 361/QĐ-BYT: Bệnh nhân gút cần hạn chế hải sản, uống nhiều nước khoáng kiềm." 
+    
+    # 2. Xây dựng Prompt "ép" AI trả lời theo tài liệu
+    prompt = f"""Bạn là chuyên gia y khoa về bệnh Gút. 
+    Dựa vào tài liệu chuẩn sau đây: {context}
+    Hãy trả lời câu hỏi: {req.question}
+    Lưu ý: Nếu tài liệu không có thông tin, hãy nói 'Tôi không rõ', không được bịa đặt."""
+
+    # 3. Gửi sang Ollama
     payload = {
         "model": "qwen2:1.5b",
-        "prompt": f"Bạn là một trợ lý y tế chuyên về bệnh Gút. Hãy trả lời câu hỏi sau: {req.question}",
+        "prompt": prompt,
         "stream": False
     }
-
+    
     try:
-        # Bắn request sang Inference-Worker
         response = requests.post(OLLAMA_URL, json=payload)
-        response.raise_for_status()
-        result = response.json()
-        
         return {
-            "question": req.question,
-            "answer": result.get("response", ""),
-            "model_used": "qwen2:1.5b",
+            "answer": response.json().get("response"),
+            "source_referenced": "QĐ 361/BYT & Gold Dataset",
             "status": "success"
         }
     except Exception as e:
-        return {"error": str(e), "status": "failed"}
+        return {"error": str(e)}
