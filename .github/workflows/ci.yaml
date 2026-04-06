@@ -45,6 +45,6 @@ jobs:
     - name: Build and Push Ingestion Image
       run: |
         IMAGE_PATH=${{ env.REGION }}-docker.pkg.dev/${{ env.PROJECT_ID }}/${{ env.REPO_NAME }}/data-ingestion
-        cd src/data-ingestion
-        docker build -t $IMAGE_PATH:latest .
+        # KHÔNG DÙNG lệnh 'cd' nữa, đứng ở thư mục gốc để build
+        docker build -t $IMAGE_PATH:latest -f src/data-ingestion/Dockerfile .
         docker push $IMAGE_PATH:latest
