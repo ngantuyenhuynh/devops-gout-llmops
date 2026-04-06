@@ -1,0 +1,12 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: gout-ingestion-job
+  namespace: gout-eval
+spec:
+  template:
+    spec:
+      containers:
+      - name: ingestion
+        image: asia-southeast1-docker.pkg.dev/logical-carver-490713-d8/gout-llmops-repo/data-ingestion:latest
+      restartPolicy: Never
