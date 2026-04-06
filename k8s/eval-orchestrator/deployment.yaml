@@ -1,0 +1,25 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: gout-eval
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: eval-orchestrator
+  namespace: gout-eval
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: eval-orchestrator
+  template:
+    metadata:
+      labels:
+        app: eval-orchestrator
+    spec:
+      containers:
+      - name: backend
+        image: nginx:alpine 
+        ports:
+        - containerPort: 80
