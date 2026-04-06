@@ -20,6 +20,6 @@ spec:
     spec:
       containers:
       - name: backend
-        image: nginx:alpine 
+        image: asia-southeast1-docker.pkg.dev/logical-carver-490713-d8/gout-llmops-repo/eval-orchestrator:latest 
         ports:
         - containerPort: 80
