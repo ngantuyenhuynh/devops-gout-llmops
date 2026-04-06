@@ -4,7 +4,7 @@ FROM python:3.10-slim
 WORKDIR /app
 
 # Cài đặt FastAPI và Uvicorn
-RUN pip install fastapi uvicorn pydantic
+RUN pip install fastapi uvicorn pydantic requests
 
 # Copy mã nguồn vào container
 COPY main.py .
