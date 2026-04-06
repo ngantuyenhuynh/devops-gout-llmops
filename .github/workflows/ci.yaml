@@ -1,16 +1,19 @@
-name: Build and Push Eval-Orchestrator to GCP
+name: Build and Push Microservices to GCP
 
 on:
   push:
     branches: [ "main" ]
+    # Tự động chạy khi có thay đổi ở 1 trong 2 thư mục này hoặc thư mục data
     paths:
-      - 'src/eval-orchestrator/**' # Chỉ chạy khi có thay đổi trong thư mục này
-  workflow_dispatch:
+      - 'src/eval-orchestrator/**'
+      - 'src/data-ingestion/**'
+      - 'data/**'
+  workflow_dispatch: # Cho phép bấm nút chạy thủ công
+
 env:
-  PROJECT_ID: ${{ secrets.GCP_PROJECT_ID }} # Sẽ điền tự động nếu bạn đổi chữ project-id của bạn bên dưới
+  PROJECT_ID: logical-carver-490713-d8
   REGION: asia-southeast1
   REPO_NAME: gout-llmops-repo
-  IMAGE_NAME: eval-orchestrator
 
 jobs:
   build-and-push:
@@ -30,11 +33,18 @@ jobs:
     - name: Configure Docker to use Google Artifact Registry
       run: gcloud auth configure-docker ${{ env.REGION }}-docker.pkg.dev
 
-    - name: Build and Push Docker Image
+    # --- PHẦN 1: BUILD EVAL-ORCHESTRATOR ---
+    - name: Build and Push Eval-Orchestrator
       run: |
-        # Đổi chữ YOUR_GCP_PROJECT_ID thành tên Project ID của bạn
-        IMAGE_PATH=${{ env.REGION }}-docker.pkg.dev/logical-carver-490713-d8/${{ env.REPO_NAME }}/${{ env.IMAGE_NAME }}
-        
+        IMAGE_PATH=${{ env.REGION }}-docker.pkg.dev/${{ env.PROJECT_ID }}/${{ env.REPO_NAME }}/eval-orchestrator
         cd src/eval-orchestrator
         docker build -t $IMAGE_PATH:latest -t $IMAGE_PATH:${{ github.sha }} .
         docker push $IMAGE_PATH --all-tags
+
+    # --- PHẦN 2: BUILD DATA-INGESTION ---
+    - name: Build and Push Ingestion Image
+      run: |
+        IMAGE_PATH=${{ env.REGION }}-docker.pkg.dev/${{ env.PROJECT_ID }}/${{ env.REPO_NAME }}/data-ingestion
+        cd src/data-ingestion
+        docker build -t $IMAGE_PATH:latest .
+        docker push $IMAGE_PATH:latest
