@@ -1,0 +1,40 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: ollama-worker
+  namespace: gout-eval
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: ollama-worker
+  template:
+    metadata:
+      labels:
+        app: ollama-worker
+    spec:
+      containers:
+      - name: ollama
+        image: ollama/ollama:latest
+        ports:
+        - containerPort: 11434
+        resources:
+          requests:
+            memory: "8Gi"
+            cpu: "2"
+          limits:
+            memory: "12Gi" # Giới hạn RAM để tránh bị sập node (OOM)
+            cpu: "4"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: ollama-service
+  namespace: gout-eval
+spec:
+  selector:
+    app: ollama-worker
+  ports:
+    - protocol: TCP
+      port: 11434 # Cổng giao tiếp tiêu chuẩn của Ollama
+      targetPort: 11434
