@@ -1,0 +1,16 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: gout-ingestion-job
+  namespace: gout-eval
+spec:
+  template:
+    spec:
+      containers:
+      - name: ingestion-container
+        # Nhớ thay YOUR_PROJECT_ID bằng logical-carver-490713-d8
+        image: asia-southeast1-docker.pkg.dev/logical-carver-490713-d8/gout-llmops-repo/data-ingestion:latest
+        imagePullPolicy: Always
+      restartPolicy: OnFailure
+  # Tự động xóa Job sau khi chạy xong 100 giây để sạch cụm K8s
+  ttlSecondsAfterFinished: 100
