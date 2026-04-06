@@ -6,58 +6,54 @@ from langchain_text_splitters import RecursiveCharacterTextSplitter
 from langchain_huggingface import HuggingFaceEmbeddings
 from langchain_qdrant import QdrantVectorStore
 
-# Cấu hình
+# Cấu hình đường dẫn nội bộ K8s
 DATA_FOLDER = "../../data/"
 QDRANT_URL = "http://qdrant-service:6333"
-COLLECTION_NAME = "gout_hybrid_knowledge"
+COLLECTION_NAME = "gout_knowledge_base"
 
-def ingest_data():
+def ingest_all():
     all_documents = []
-    
-    # 1. Khởi tạo mô hình Embedding (Dành cho tiếng Việt)
-    embeddings = HuggingFaceEmbeddings(
-        model_name="sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2"
-    )
+    embeddings = HuggingFaceEmbeddings(model_name="sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2")
 
-    print("--- Bắt đầu quét dữ liệu Gout (JSON & PDF) ---")
+    print("--- 🚀 Bắt đầu quét kho dữ liệu Gout ---")
     
     for file in os.listdir(DATA_FOLDER):
         file_path = os.path.join(DATA_FOLDER, file)
         
-        # XỬ LÝ FILE PDF
+        # 1. Xử lý PDF (Guideline 1 & 2)
         if file.endswith(".pdf"):
-            print(f"Đang đọc PDF: {file}")
+            print(f"📄 Đang đọc PDF: {file}")
             loader = PyPDFLoader(file_path)
-            # Chia nhỏ PDF ngay khi đọc
-            text_splitter = RecursiveCharacterTextSplitter(chunk_size=800, chunk_overlap=150)
-            pdf_docs = loader.load_and_split(text_splitter)
-            all_documents.extend(pdf_docs)
+            splitter = RecursiveCharacterTextSplitter(chunk_size=1000, chunk_overlap=200)
+            all_documents.extend(loader.load_and_split(splitter))
 
-        # XỬ LÝ FILE JSON (Dữ liệu đã chunk sẵn)
+        # 2. Xử lý JSON (Test Cases)
         elif file.endswith(".json"):
-            print(f"Đang đọc JSON chunk: {file}")
+            print(f"📊 Đang đọc JSON: {file}")
             with open(file_path, 'r', encoding='utf-8') as f:
-                json_data = json.load(f)
-                # Giả sử JSON là list các dict: [{"content": "..."}, ...]
-                for item in json_data:
-                    content = item.get("content") or item.get("text") or str(item)
-                    # Giữ lại metadata nếu có để sau này AI trích dẫn nguồn
-                    doc = Document(page_content=content, metadata={"source": file})
-                    all_documents.append(doc)
+                data = json.load(f)
+                for item in data:
+                    content = f"Q: {item.get('cau_hoi')}\nA: {item.get('ground_truth')}"
+                    all_documents.append(Document(page_content=content, metadata={"source": file, "type": "qa"}))
 
-    # 2. Đẩy toàn bộ vào Qdrant
+        # 3. Xử lý JSONL (KB Chunks & Test Cases JSONL)
+        elif file.endswith(".jsonl"):
+            print(f"📦 Đang đọc JSONL: {file}")
+            with open(file_path, 'r', encoding='utf-8') as f:
+                for line in f:
+                    item = json.loads(line)
+                    # Tùy biến theo cấu trúc JSONL của bạn, ở đây lấy content hoặc text
+                    text = item.get("content") or item.get("text") or str(item)
+                    all_documents.append(Document(page_content=text, metadata={"source": file}))
+
+    # 4. Đẩy lên Qdrant
     if all_documents:
-        print(f"Tổng cộng có {len(all_documents)} đoạn dữ liệu. Đang nạp vào Qdrant...")
+        print(f"✅ Tổng cộng có {len(all_documents)} đoạn tri thức. Đang nạp vào Qdrant...")
         QdrantVectorStore.from_documents(
-            all_documents,
-            embeddings,
-            url=QDRANT_URL,
-            collection_name=COLLECTION_NAME,
-            force_recreate=True
+            all_documents, embeddings, url=QDRANT_URL, 
+            collection_name=COLLECTION_NAME, force_recreate=True
         )
-        print("--- Hoàn tất! Vector DB đã sẵn sàng ---")
-    else:
-        print("Không tìm thấy dữ liệu hợp lệ trong thư mục data!")
+        print("--- 🏁 Hoàn tất nạp dữ liệu! ---")
 
 if __name__ == "__main__":
-    ingest_data()
+    ingest_all()
