@@ -20,11 +20,11 @@ spec:
         - containerPort: 11434
         resources:
           requests:
-            memory: "8Gi"
-            cpu: "2"
+            memory: "2Gi"
+            cpu: "500m"
           limits:
-            memory: "12Gi" # Giới hạn RAM để tránh bị sập node (OOM)
-            cpu: "4"
+            memory: "8Gi" # Giới hạn RAM để tránh bị sập node (OOM)
+            cpu: "2"
 ---
 apiVersion: v1
 kind: Service
