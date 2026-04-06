@@ -7,7 +7,7 @@ from langchain_huggingface import HuggingFaceEmbeddings
 from langchain_qdrant import QdrantVectorStore
 
 # Cấu hình đường dẫn nội bộ K8s
-DATA_FOLDER = "../../data/"
+DATA_FOLDER = "./data/"
 QDRANT_URL = "http://qdrant-service:6333"
 COLLECTION_NAME = "gout_knowledge_base"
 
