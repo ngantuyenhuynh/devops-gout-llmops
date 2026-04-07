@@ -1,0 +1,9 @@
+fastapi
+uvicorn
+pydantic
+requests
+langchain
+langchain-qdrant
+langchain-huggingface
+qdrant-client
+sentence-transformers
