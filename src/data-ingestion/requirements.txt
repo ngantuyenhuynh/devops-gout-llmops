@@ -1,6 +1,7 @@
 langchain
 langchain-community
 langchain-qdrant
+langchain-huggingface
 PyPDF2
 sentence-transformers
 qdrant-client
