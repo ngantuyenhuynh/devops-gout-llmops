@@ -41,10 +41,18 @@ def ingest_all():
             print(f"📦 Đang đọc JSONL: {file}")
             with open(file_path, 'r', encoding='utf-8') as f:
                 for line in f:
-                    item = json.loads(line)
-                    # Tùy biến theo cấu trúc JSONL của bạn, ở đây lấy content hoặc text
-                    text = item.get("content") or item.get("text") or str(item)
-                    all_documents.append(Document(page_content=text, metadata={"source": file}))
+                    line = line.strip() # Dọn dẹp khoảng trắng và dấu xuống dòng thừa
+                    if not line:        # Bỏ qua ngay nếu là dòng trống
+                        continue
+                    
+                    try:
+                        item = json.loads(line)
+                        # Tùy biến theo cấu trúc JSONL của bạn
+                        text = item.get("content") or item.get("text") or str(item)
+                        all_documents.append(Document(page_content=text, metadata={"source": file}))
+                    except json.JSONDecodeError as e:
+                        # Báo lỗi nhẹ nhàng và chạy tiếp dòng khác, không làm sập cả chương trình
+                        print(f"⚠️ Bỏ qua 1 dòng lỗi trong {file}: {e}")
 
     # 4. Đẩy lên Qdrant
     if all_documents:
