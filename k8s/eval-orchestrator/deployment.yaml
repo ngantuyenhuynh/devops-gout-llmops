@@ -21,5 +21,6 @@ spec:
       containers:
       - name: backend
         image: asia-southeast1-docker.pkg.dev/logical-carver-490713-d8/gout-llmops-repo/eval-orchestrator:latest 
+        imagePullPolicy: Always   # <--- THÊM DÒNG NÀY ĐỂ ÉP KÉO CODE MỚI
         ports:
-        - containerPort: 80
+        - containerPort: 8000     # <--- SỬA 80 THÀNH 8000 CHO KHỚP VỚI DOCKERFILE
