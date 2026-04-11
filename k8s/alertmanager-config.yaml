@@ -18,7 +18,7 @@ spec:
     - to: 'caphuutu2005@gmail.com' # Email nhận thông báo
       from: '23521969@gm.uit.edu.vn'         # Email gửi (khớp với SMTP username)
       smarthost: 'smtp.gmail.com:587'
-      authUsername: '23521969@gm.uit.edu.vn'
+      authUsername: '23521696@gm.uit.edu.vn'
       authPassword:
         name: smtp-secret
         key: password
