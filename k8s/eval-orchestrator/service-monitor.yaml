@@ -1,0 +1,20 @@
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: eval-orchestrator-monitor
+  namespace: gout-eval
+  labels:
+    # Label này để Prometheus tự động nhận diện (khớp với helm values)
+    release: monitoring-stack 
+spec:
+  selector:
+    matchLabels:
+      app: eval-orchestrator
+  namespaceSelector:
+    matchNames:
+      - gout-eval
+  endpoints:
+  - port: http # Khớp với tên port nếu có định nghĩa trong service
+    targetPort: 8000
+    path: /metrics
+    interval: 15s
