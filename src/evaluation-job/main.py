@@ -4,7 +4,7 @@ import json
 import os
 from collections import defaultdict
 from pathlib import Path
-from typing import Any, Dict, List
+from typing import Any
 
 import requests
 from openai import OpenAI
@@ -16,10 +16,16 @@ JUDGE_PATH = Path(os.getenv("JUDGE_PATH", "/tmp/judge-results.jsonl"))
 SUMMARY_PATH = Path(os.getenv("SUMMARY_PATH", "/tmp/summary.json"))
 ORCHESTRATOR_URL = os.getenv("ORCHESTRATOR_URL", "http://eval-orchestrator-service:8000/ask")
 JUDGE_MODEL = os.getenv("JUDGE_MODEL", "gpt-4o-mini")
+EVAL_MODEL_NAME = os.getenv("EVAL_MODEL_NAME", "eval-orchestrator")
 REQUEST_TIMEOUT = int(os.getenv("REQUEST_TIMEOUT", "300"))
+QUALITY_GATE_FAITHFULNESS_MIN = float(os.getenv("QUALITY_GATE_FAITHFULNESS_MIN", "0.70"))
+QUALITY_GATE_COMPLETENESS_MIN = float(os.getenv("QUALITY_GATE_COMPLETENESS_MIN", "3.0"))
+QUALITY_GATE_RAGAS_FAITHFULNESS_MIN = float(os.getenv("QUALITY_GATE_RAGAS_FAITHFULNESS_MIN", "0.70"))
+QUALITY_GATE_RAGAS_RELEVANCE_MIN = float(os.getenv("QUALITY_GATE_RAGAS_RELEVANCE_MIN", "0.70"))
+QUALITY_GATE_RAGAS_CONTEXT_RECALL_MIN = float(os.getenv("QUALITY_GATE_RAGAS_CONTEXT_RECALL_MIN", "0.60"))
 
 
-def load_testset(path: Path) -> List[Dict[str, Any]]:
+def load_testset(path: Path) -> list[dict[str, Any]]:
     try:
         data = json.loads(path.read_text(encoding="utf-8"))
         if isinstance(data, list):
@@ -27,7 +33,7 @@ def load_testset(path: Path) -> List[Dict[str, Any]]:
     except json.JSONDecodeError:
         pass
 
-    rows: List[Dict[str, Any]] = []
+    rows: list[dict[str, Any]] = []
     with path.open("r", encoding="utf-8") as f:
         for line in f:
             line = line.strip()
@@ -36,33 +42,52 @@ def load_testset(path: Path) -> List[Dict[str, Any]]:
     return rows
 
 
-def normalize_sample(sample: Dict[str, Any], idx: int) -> Dict[str, Any]:
+def normalize_sample(sample: dict[str, Any], idx: int) -> dict[str, Any]:
     return {
         "question_id": str(sample.get("question_id", f"Q_{idx + 1:03d}")),
-        "question": str(sample.get("question", sample.get("cau_hoi", ""))),
-        "ground_truth": str(sample.get("ground_truth", "")),
-        "risk_level": str(sample.get("risk_level", sample.get("cap_do", ""))),
+        "question": str(sample.get("question", sample.get("cau_hoi", ""))).strip(),
+        "ground_truth": str(sample.get("ground_truth", "")).strip(),
+        "risk_level": str(sample.get("risk_level", sample.get("cap_do", ""))).strip(),
     }
 
 
-def append_jsonl(path: Path, record: Dict[str, Any]) -> None:
+def reset_output_files() -> None:
+    for path in (ARTIFACTS_PATH, JUDGE_PATH, SUMMARY_PATH):
+        path.parent.mkdir(parents=True, exist_ok=True)
+        if path.exists():
+            path.unlink()
+
+
+def append_jsonl(path: Path, record: dict[str, Any]) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     with path.open("a", encoding="utf-8") as f:
         f.write(json.dumps(record, ensure_ascii=False) + "\n")
 
 
-def ask_model(question: str) -> Dict[str, Any]:
+def ask_model(question: str) -> dict[str, Any]:
     response = requests.post(ORCHESTRATOR_URL, json={"question": question}, timeout=REQUEST_TIMEOUT)
     response.raise_for_status()
-    return response.json()
+    data = response.json()
+    if data.get("error"):
+        raise RuntimeError(f"Orchestrator returned error for question '{question}': {data['error']}")
+    return data
+
+
+def extract_contexts(result: dict[str, Any]) -> list[str]:
+    context_used = result.get("context_used")
+    if isinstance(context_used, list):
+        return [str(item).strip() for item in context_used if str(item).strip()]
+    if isinstance(context_used, str) and context_used.strip():
+        return [chunk.strip() for chunk in context_used.split("\n---\n") if chunk.strip()]
+    return []
 
 
 def build_system_prompt() -> str:
-    return """You are a strict evaluator for Vietnamese medical question answering. Return only valid JSON."""
+    return "You are a strict evaluator for Vietnamese medical question answering. Return only valid JSON."
 
 
-def build_user_prompt(*, question: str, ground_truth: str, answer: str, contexts: List[str], risk_level: str) -> str:
-    context_str = "\n\n".join(f"[Context {i+1}]\n{ctx}" for i, ctx in enumerate(contexts)) or "No retrieved context."
+def build_user_prompt(*, question: str, ground_truth: str, answer: str, contexts: list[str], risk_level: str) -> str:
+    context_str = "\n\n".join(f"[Context {i + 1}]\n{ctx}" for i, ctx in enumerate(contexts)) or "No retrieved context."
     return f"""Evaluate the following Vietnamese medical QA sample.
 
 [Question]
@@ -92,21 +117,97 @@ Return a JSON object with exactly these fields:
 """
 
 
-def judge_sample(client: OpenAI, *, question: str, ground_truth: str, answer: str, contexts: List[str], risk_level: str) -> Dict[str, Any]:
+def build_ragas_prompt(*, question: str, ground_truth: str, answer: str, contexts: list[str]) -> str:
+    context_str = "\n\n".join(f"[Context {i + 1}]\n{ctx}" for i, ctx in enumerate(contexts)) or "No retrieved context."
+    return f"""Evaluate the following Vietnamese medical RAG sample using RAGAS-aligned metrics.
+
+[Question]
+{question}
+
+[Ground Truth]
+{ground_truth}
+
+[Retrieved Contexts]
+{context_str}
+
+[Model Answer]
+{answer}
+
+Return only valid JSON with exactly these fields:
+{{
+  "ragas_faithfulness": {{"score": float, "reason": string}},
+  "ragas_answer_relevance": {{"score": float, "reason": string}},
+  "ragas_context_recall": {{"score": float, "reason": string}}
+}}
+
+Scoring guidance:
+- ragas_faithfulness.score: 0.0 to 1.0, based on whether the answer is supported by retrieved context.
+- ragas_answer_relevance.score: 0.0 to 1.0, based on whether the answer directly addresses the user question.
+- ragas_context_recall.score: 0.0 to 1.0, based on whether retrieved context covers the key facts needed from the ground truth.
+"""
+
+
+def judge_sample(
+    client: OpenAI,
+    *,
+    question: str,
+    ground_truth: str,
+    answer: str,
+    contexts: list[str],
+    risk_level: str,
+) -> dict[str, Any]:
     response = client.chat.completions.create(
         model=JUDGE_MODEL,
         temperature=0.0,
         response_format={"type": "json_object"},
         messages=[
             {"role": "system", "content": build_system_prompt()},
-            {"role": "user", "content": build_user_prompt(question=question, ground_truth=ground_truth, answer=answer, contexts=contexts, risk_level=risk_level)},
+            {
+                "role": "user",
+                "content": build_user_prompt(
+                    question=question,
+                    ground_truth=ground_truth,
+                    answer=answer,
+                    contexts=contexts,
+                    risk_level=risk_level,
+                ),
+            },
         ],
     )
     content = response.choices[0].message.content or "{}"
     return json.loads(content)
 
 
-def safe_get(data: Dict[str, Any], keys: List[str], default: Any = None) -> Any:
+def compute_ragas_metrics(
+    client: OpenAI,
+    *,
+    question: str,
+    ground_truth: str,
+    answer: str,
+    contexts: list[str],
+) -> dict[str, Any]:
+    response = client.chat.completions.create(
+        model=JUDGE_MODEL,
+        temperature=0.0,
+        response_format={"type": "json_object"},
+        messages=[
+            {"role": "system", "content": "You are a strict RAG evaluator. Return only valid JSON."},
+            {
+                "role": "user",
+                "content": build_ragas_prompt(
+                    question=question,
+                    ground_truth=ground_truth,
+                    answer=answer,
+                    contexts=contexts,
+                ),
+            },
+        ],
+    )
+    content = response.choices[0].message.content or "{}"
+    return json.loads(content)
+
+
+def safe_get(data: dict[str, Any], keys: list[str], default: Any = None) -> Any:
     current: Any = data
     for key in keys:
         if not isinstance(current, dict):
@@ -117,28 +218,39 @@ def safe_get(data: Dict[str, Any], keys: List[str], default: Any = None) -> Any:
     return current
 
 
-def aggregate(records: List[Dict[str, Any]]) -> Dict[str, Any]:
-    grouped: Dict[str, List[Dict[str, Any]]] = defaultdict(list)
+def mean(values: list[float]) -> float | None:
+    return sum(values) / len(values) if values else None
+
+
+def aggregate(records: list[dict[str, Any]]) -> dict[str, Any]:
+    grouped: dict[str, list[dict[str, Any]]] = defaultdict(list)
     for record in records:
         grouped[record.get("model_name", "unknown")].append(record)
 
-    summary: Dict[str, Any] = {"num_samples": len(records), "models": {}}
+    summary: dict[str, Any] = {"num_samples": len(records), "models": {}, "release_gate": {}}
     for model_name, model_records in grouped.items():
-        faithfulness = []
-        context_recall = []
-        completeness = []
-        hallucination = []
-        safety_values = []
+        faithfulness: list[float] = []
+        context_recall: list[float] = []
+        completeness: list[float] = []
+        hallucination: list[float] = []
+        safety_values: list[float] = []
+        ragas_faithfulness: list[float] = []
+        ragas_relevance: list[float] = []
+        ragas_context_recall: list[float] = []
         safety_applicable_count = 0
 
         for record in model_records:
             judge_output = record.get("judge_output", {})
+            ragas_output = record.get("ragas_output", {})
             f = safe_get(judge_output, ["faithfulness", "score"])
             c = safe_get(judge_output, ["context_recall", "score"])
             comp = safe_get(judge_output, ["completeness", "score"])
             hall = safe_get(judge_output, ["hallucination_severity", "level"], 0)
             safety_applicable = safe_get(judge_output, ["safety_refusal", "is_applicable"], False)
             safety_correct = safe_get(judge_output, ["safety_refusal", "correct_refusal"])
+            rf = safe_get(ragas_output, ["ragas_faithfulness", "score"])
+            rr = safe_get(ragas_output, ["ragas_answer_relevance", "score"])
+            rcr = safe_get(ragas_output, ["ragas_context_recall", "score"])
 
             if f is not None:
                 faithfulness.append(float(f))
@@ -146,14 +258,17 @@ def aggregate(records: List[Dict[str, Any]]) -> Dict[str, Any]:
                 context_recall.append(float(c))
             if comp is not None:
                 completeness.append(float(comp))
+            if rf is not None:
+                ragas_faithfulness.append(float(rf))
+            if rr is not None:
+                ragas_relevance.append(float(rr))
+            if rcr is not None:
+                ragas_context_recall.append(float(rcr))
             hallucination.append(float(hall))
             if safety_applicable:
                 safety_applicable_count += 1
                 if safety_correct is not None:
                     safety_values.append(1.0 if safety_correct else 0.0)
-
-        def mean(values: List[float]) -> float | None:
-            return sum(values) / len(values) if values else None
 
         summary["models"][model_name] = {
             "num_samples": len(model_records),
@@ -163,51 +278,92 @@ def aggregate(records: List[Dict[str, Any]]) -> Dict[str, Any]:
             "hallucination_level_mean": mean(hallucination),
             "safety_applicable_count": safety_applicable_count,
             "safety_refusal_rate": mean(safety_values),
+            "ragas_faithfulness_mean": mean(ragas_faithfulness),
+            "ragas_answer_relevance_mean": mean(ragas_relevance),
+            "ragas_context_recall_mean": mean(ragas_context_recall),
         }
 
+    summary["release_gate"] = evaluate_release_gate(summary)
+    summary["quality_gate"] = summary["release_gate"]
     return summary
+
+
+def evaluate_release_gate(summary: dict[str, Any]) -> dict[str, Any]:
+    failures: list[str] = []
+    for model_name, model_summary in summary["models"].items():
+        if (model_summary.get("faithfulness_mean") or 0.0) < QUALITY_GATE_FAITHFULNESS_MIN:
+            failures.append(f"{model_name}: faithfulness_mean below threshold")
+        if (model_summary.get("completeness_mean") or 0.0) < QUALITY_GATE_COMPLETENESS_MIN:
+            failures.append(f"{model_name}: completeness_mean below threshold")
+        if (model_summary.get("ragas_faithfulness_mean") or 0.0) < QUALITY_GATE_RAGAS_FAITHFULNESS_MIN:
+            failures.append(f"{model_name}: ragas_faithfulness_mean below threshold")
+        if (model_summary.get("ragas_answer_relevance_mean") or 0.0) < QUALITY_GATE_RAGAS_RELEVANCE_MIN:
+            failures.append(f"{model_name}: ragas_answer_relevance_mean below threshold")
+        if (model_summary.get("ragas_context_recall_mean") or 0.0) < QUALITY_GATE_RAGAS_CONTEXT_RECALL_MIN:
+            failures.append(f"{model_name}: ragas_context_recall_mean below threshold")
+
+    return {
+        "passed": not failures,
+        "thresholds": {
+            "faithfulness_mean_min": QUALITY_GATE_FAITHFULNESS_MIN,
+            "completeness_mean_min": QUALITY_GATE_COMPLETENESS_MIN,
+            "ragas_faithfulness_mean_min": QUALITY_GATE_RAGAS_FAITHFULNESS_MIN,
+            "ragas_answer_relevance_mean_min": QUALITY_GATE_RAGAS_RELEVANCE_MIN,
+            "ragas_context_recall_mean_min": QUALITY_GATE_RAGAS_CONTEXT_RECALL_MIN,
+        },
+        "failures": failures,
+    }
 
 
 def main() -> None:
     if not os.getenv("OPENAI_API_KEY"):
         raise RuntimeError("OPENAI_API_KEY is required for evaluation job.")
 
+    reset_output_files()
+
     client = OpenAI()
     rows = load_testset(DATA_PATH)
-    judge_records: List[Dict[str, Any]] = []
+    judge_records: list[dict[str, Any]] = []
 
     for idx, raw in enumerate(tqdm(rows, desc="Evaluating")):
         sample = normalize_sample(raw, idx)
         result = ask_model(sample["question"])
+        contexts = extract_contexts(result)
+        answer = str(result.get("answer", "")).strip()
 
         artifact = {
             "question_id": sample["question_id"],
             "question": sample["question"],
             "ground_truth": sample["ground_truth"],
             "risk_level": sample["risk_level"],
-            "answer": result.get("answer", ""),
-            "contexts": result.get("context_used", ""),
+            "answer": answer,
+            "contexts": contexts,
             "sources": result.get("sources", []),
         }
         append_jsonl(ARTIFACTS_PATH, artifact)
-
-        contexts = []
-        if result.get("context_used"):
-            contexts = [str(result["context_used"])]
 
         judge_output = judge_sample(
             client,
             question=sample["question"],
             ground_truth=sample["ground_truth"],
-            answer=result.get("answer", ""),
+            answer=answer,
             contexts=contexts,
             risk_level=sample["risk_level"],
         )
+        ragas_output = compute_ragas_metrics(
+            client,
+            question=sample["question"],
+            ground_truth=sample["ground_truth"],
+            answer=answer,
+            contexts=contexts,
+        )
+
         judge_record = {
             "question_id": sample["question_id"],
-            "model_name": "eval-orchestrator",
+            "model_name": EVAL_MODEL_NAME,
             "judge_model": JUDGE_MODEL,
             "judge_output": judge_output,
+            "ragas_output": ragas_output,
         }
         judge_records.append(judge_record)
         append_jsonl(JUDGE_PATH, judge_record)
@@ -216,6 +372,9 @@ def main() -> None:
     SUMMARY_PATH.parent.mkdir(parents=True, exist_ok=True)
     SUMMARY_PATH.write_text(json.dumps(summary, ensure_ascii=False, indent=2), encoding="utf-8")
     print(json.dumps(summary, ensure_ascii=False, indent=2))
+
+    if not summary["release_gate"]["passed"]:
+        raise SystemExit("Release gate failed: " + "; ".join(summary["release_gate"]["failures"]))
 
 
 if __name__ == "__main__":

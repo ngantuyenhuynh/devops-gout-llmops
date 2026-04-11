@@ -3,22 +3,24 @@ name: Build and Push Microservices to GCP
 on:
   push:
     branches: [ "main" ]
-    # Tự động chạy khi có thay đổi ở 1 trong 2 thư mục này hoặc thư mục data
     paths:
       - 'src/eval-orchestrator/**'
       - 'src/data-ingestion/**'
       - 'src/evaluation-job/**'
       - 'k8s/**'
       - 'data/**'
-  workflow_dispatch: # Cho phép bấm nút chạy thủ công
+  workflow_dispatch:
 
 env:
   PROJECT_ID: logical-carver-490713-d8
   REGION: asia-southeast1
   REPO_NAME: gout-llmops-repo
+  GKE_CLUSTER: gout-llmops-cluster
+  GKE_LOCATION: asia-southeast1
+  K8S_NAMESPACE: gout-eval
 
 jobs:
-  build-and-push:
+  build-push-and-evaluate:
     runs-on: ubuntu-latest
     steps:
     - name: Checkout code
@@ -35,7 +37,12 @@ jobs:
     - name: Configure Docker to use Google Artifact Registry
       run: gcloud auth configure-docker ${{ env.REGION }}-docker.pkg.dev
 
-    # --- PHẦN 1: BUILD EVAL-ORCHESTRATOR ---
+    - name: Get GKE credentials
+      uses: google-github-actions/get-gke-credentials@v2
+      with:
+        cluster_name: ${{ env.GKE_CLUSTER }}
+        location: ${{ env.GKE_LOCATION }}
+
     - name: Build and Push Eval-Orchestrator
       run: |
         IMAGE_PATH=${{ env.REGION }}-docker.pkg.dev/${{ env.PROJECT_ID }}/${{ env.REPO_NAME }}/eval-orchestrator
@@ -43,18 +50,45 @@ jobs:
         docker build -t $IMAGE_PATH:latest -t $IMAGE_PATH:${{ github.sha }} .
         docker push $IMAGE_PATH --all-tags
 
-    # --- PHẦN 2: BUILD DATA-INGESTION ---
     - name: Build and Push Ingestion Image
       run: |
         IMAGE_PATH=${{ env.REGION }}-docker.pkg.dev/${{ env.PROJECT_ID }}/${{ env.REPO_NAME }}/data-ingestion
-        # KHÔNG DÙNG lệnh 'cd' nữa, đứng ở thư mục gốc để build
         docker build -t $IMAGE_PATH:latest -f src/data-ingestion/Dockerfile .
         docker push $IMAGE_PATH:latest
 
-
-    # --- PHẦN 3: BUILD EVALUATION-JOB ---
     - name: Build and Push Evaluation-Job
       run: |
         IMAGE_PATH=${{ env.REGION }}-docker.pkg.dev/${{ env.PROJECT_ID }}/${{ env.REPO_NAME }}/evaluation-job
         docker build -t $IMAGE_PATH:latest -f src/evaluation-job/Dockerfile .
         docker push $IMAGE_PATH:latest
+
+    - name: Apply manifests
+      run: |
+        kubectl apply -f k8s/vector-db/qdrant.yaml
+        kubectl apply -f k8s/eval-orchestrator/deployment.yaml
+        kubectl apply -f k8s/eval-orchestrator/service.yaml
+
+    - name: Upsert OpenAI secret
+      run: |
+        kubectl create secret generic openai-secret \
+          --from-literal=api-key='${{ secrets.OPENAI_API_KEY }}' \
+          --namespace=${{ env.K8S_NAMESPACE }} \
+          --dry-run=client -o yaml | kubectl apply -f -
+
+    - name: Wait for eval-orchestrator rollout
+      run: kubectl rollout status deployment/eval-orchestrator -n ${{ env.K8S_NAMESPACE }} --timeout=300s
+
+    - name: Run evaluation job
+      run: |
+        kubectl delete job evaluation-job -n ${{ env.K8S_NAMESPACE }} --ignore-not-found=true
+        kubectl apply -f k8s/evaluation-job/job.yaml
+        kubectl wait --for=condition=complete job/evaluation-job -n ${{ env.K8S_NAMESPACE }} --timeout=1800s || {
+          kubectl logs job/evaluation-job -n ${{ env.K8S_NAMESPACE }} || true
+          kubectl describe job/evaluation-job -n ${{ env.K8S_NAMESPACE }} || true
+          kubectl get pods -n ${{ env.K8S_NAMESPACE }} -l job-name=evaluation-job -o wide || true
+          exit 1
+        }
+
+    - name: Print evaluation logs
+      if: always()
+      run: kubectl logs job/evaluation-job -n ${{ env.K8S_NAMESPACE }} || true
