@@ -67,6 +67,7 @@ jobs:
         kubectl apply -f k8s/vector-db/qdrant.yaml
         kubectl apply -f k8s/eval-orchestrator/deployment.yaml
         kubectl apply -f k8s/eval-orchestrator/service.yaml
+        kubectl apply -f k8s/eval-orchestrator/service-monitor.yaml
 
     - name: Upsert OpenAI secret
       run: |
