@@ -7,6 +7,8 @@ on:
     paths:
       - 'src/eval-orchestrator/**'
       - 'src/data-ingestion/**'
+      - 'src/evaluation-job/**'
+      - 'k8s/**'
       - 'data/**'
   workflow_dispatch: # Cho phép bấm nút chạy thủ công
 
@@ -47,4 +49,12 @@ jobs:
         IMAGE_PATH=${{ env.REGION }}-docker.pkg.dev/${{ env.PROJECT_ID }}/${{ env.REPO_NAME }}/data-ingestion
         # KHÔNG DÙNG lệnh 'cd' nữa, đứng ở thư mục gốc để build
         docker build -t $IMAGE_PATH:latest -f src/data-ingestion/Dockerfile .
+        docker push $IMAGE_PATH:latest
+
+
+    # --- PHẦN 3: BUILD EVALUATION-JOB ---
+    - name: Build and Push Evaluation-Job
+      run: |
+        IMAGE_PATH=${{ env.REGION }}-docker.pkg.dev/${{ env.PROJECT_ID }}/${{ env.REPO_NAME }}/evaluation-job
+        docker build -t $IMAGE_PATH:latest -f src/evaluation-job/Dockerfile .
         docker push $IMAGE_PATH:latest
