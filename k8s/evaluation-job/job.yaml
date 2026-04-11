@@ -1,0 +1,26 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: evaluation-job
+  namespace: gout-eval
+spec:
+  template:
+    spec:
+      restartPolicy: Never
+      containers:
+      - name: evaluation-job
+        image: asia-southeast1-docker.pkg.dev/logical-carver-490713-d8/gout-llmops-repo/evaluation-job:latest
+        imagePullPolicy: Always
+        env:
+        - name: ORCHESTRATOR_URL
+          value: http://eval-orchestrator-service:8000/ask
+        - name: TESTSET_PATH
+          value: /app/data/gout_test_cases.json
+        - name: JUDGE_MODEL
+          value: gpt-4o-mini
+        - name: OPENAI_API_KEY
+          valueFrom:
+            secretKeyRef:
+              name: openai-secret
+              key: api-key
+  backoffLimit: 0

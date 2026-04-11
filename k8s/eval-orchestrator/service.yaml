@@ -1,0 +1,12 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: eval-orchestrator-service
+  namespace: gout-eval
+spec:
+  selector:
+    app: eval-orchestrator
+  ports:
+    - protocol: TCP
+      port: 8000
+      targetPort: 8000
