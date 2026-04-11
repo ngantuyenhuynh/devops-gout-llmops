@@ -15,6 +15,5 @@ spec:
       - gout-eval
   endpoints:
   - port: http # Khớp với tên port nếu có định nghĩa trong service
-    targetPort: 8000
     path: /metrics
     interval: 15s
