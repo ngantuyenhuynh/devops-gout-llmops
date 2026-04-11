@@ -1,0 +1,27 @@
+apiVersion: monitoring.coreos.com/v1alpha1
+kind: AlertmanagerConfig
+metadata:
+  name: email-config
+  namespace: monitoring
+  labels:
+    release: monitoring-stack # Khớp với label trong prometheus-stack-argocd.yaml
+spec:
+  route:
+    receiver: 'email-receiver'
+    groupBy: ['alertname']
+    groupWait: 30s
+    groupInterval: 5m
+    repeatInterval: 12h
+  receivers:
+  - name: 'email-receiver'
+    emailConfigs:
+    - to: 'caphuutu2005@gmail.com' # Email nhận thông báo
+      from: '23521969@gm.uit.edu.vn'         # Email gửi (khớp với SMTP username)
+      smarthost: 'smtp.gmail.com:587'
+      authUsername:
+        name: smtp-secret
+        key: username
+      authPassword:
+        name: smtp-secret
+        key: password
+      sendResolved: true
