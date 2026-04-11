@@ -8,4 +8,4 @@ langchain-huggingface
 qdrant-client
 sentence-transformers
 prometheus-fastapi-instrumentator==6.1.0
-langfuse>=2.0.0
+langfuse==2.60.0
