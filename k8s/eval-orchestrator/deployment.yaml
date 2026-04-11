@@ -24,3 +24,10 @@ spec:
         imagePullPolicy: Always   # <--- THÊM DÒNG NÀY ĐỂ ÉP KÉO CODE MỚI
         ports:
         - containerPort: 8000     # <--- SỬA 80 THÀNH 8000 CHO KHỚP VỚI DOCKERFILE
+        env:
+        - name: LANGFUSE_SECRET_KEY
+          value: "sk-lf-..." # Điền secret key từ langfuse.com
+        - name: LANGFUSE_PUBLIC_KEY
+          value: "pk-lf-..." # Điền public key từ langfuse.com
+        - name: LANGFUSE_HOST
+          value: "https://cloud.langfuse.com"
