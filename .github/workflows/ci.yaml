@@ -15,8 +15,8 @@ env:
   PROJECT_ID: logical-carver-490713-d8
   REGION: asia-southeast1
   REPO_NAME: gout-llmops-repo
-  GKE_CLUSTER: gout-llmops-cluster
-  GKE_LOCATION: asia-southeast1
+  GKE_CLUSTER: cluster-1
+  GKE_LOCATION: asia-southeast1-a
   K8S_NAMESPACE: gout-eval
 
 jobs:
