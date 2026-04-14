@@ -10,7 +10,7 @@ from langfuse.decorators import observe, langfuse_context
 
 app = FastAPI(title="Gout-LLM RAG API")
 
-# Kích hoạt Prometheus Metrisc /metrics
+# Kích hoạt Prometheus Metrics /metrics
 Instrumentator().instrument(app).expose(app)
 
 # Cấu hình đường dẫn nội bộ K8s
@@ -23,15 +23,20 @@ embeddings = HuggingFaceEmbeddings(model_name="sentence-transformers/paraphrase-
 client = QdrantClient(url=QDRANT_URL)
 vector_store = QdrantVectorStore(client=client, collection_name=COLLECTION_NAME, embedding=embeddings)
 
+# 1. CẬP NHẬT Ở ĐÂY: Thêm model_name vào Request
 class QuestionRequest(BaseModel):
     question: str
+    model_name: str = "qwen2:1.5b" # Đặt Qwen làm mặc định nếu không ai truyền vào
 
 # Langfuse theo dõi toàn bộ luồng
 @observe(name="Gout_RAG_Pipeline")
 @app.post("/ask")
 def ask_gout_bot(req: QuestionRequest):
-    # Gắn câu hỏi vào Trace
-    langfuse_context.update_current_trace(input=req.question)
+    # 2. CẬP NHẬT Ở ĐÂY: Gắn thêm tên model vào Langfuse để lên Dashboard dễ lọc
+    langfuse_context.update_current_trace(
+        input=req.question,
+        metadata={"model_used": req.model_name} 
+    )
 
     try:
         docs = vector_store.similarity_search(req.question, k=3)
@@ -50,8 +55,9 @@ TÀI LIỆU Y KHOA:
 CÂU HỎI: {req.question}
 TRẢ LỜI:"""
 
+    # 3. CẬP NHẬT Ở ĐÂY: Truyền biến model_name vào payload của Ollama
     payload = {
-        "model": "qwen2:1.5b", 
+        "model": req.model_name, 
         "prompt": prompt,
         "stream": False
     }
