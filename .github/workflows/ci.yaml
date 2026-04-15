@@ -106,8 +106,15 @@ jobs:
     - name: Push Ingestion Image
       run: |
         IMAGE_PATH=${{ env.REGION }}-docker.pkg.dev/${{ env.PROJECT_ID }}/${{ env.REPO_NAME }}/data-ingestion
-        docker tag data-ingestion:test $IMAGE_PATH:latest
-        docker push $IMAGE_PATH:latest
+        # Luôn push tag SHA
+        docker tag data-ingestion:test $IMAGE_PATH:${{ github.sha }}
+        docker push $IMAGE_PATH:${{ github.sha }}
+        
+        # Chỉ push tag latest nếu ở nhánh main
+        if [ "${{ github.ref }}" = "refs/heads/main" ]; then
+          docker tag data-ingestion:test $IMAGE_PATH:latest
+          docker push $IMAGE_PATH:latest
+        fi
         
     # === BƯỚC 3.5: BUILD VÀ PUSH IMAGE (EVALUATION-JOB) ===
     - name: Build Evaluation Job Local
@@ -123,16 +130,29 @@ jobs:
     - name: Push Evaluation Job Image
       run: |
         IMAGE_PATH=${{ env.REGION }}-docker.pkg.dev/${{ env.PROJECT_ID }}/${{ env.REPO_NAME }}/evaluation-job
-        docker tag evaluation-job:test $IMAGE_PATH:latest
+        # Luôn push tag SHA
         docker tag evaluation-job:test $IMAGE_PATH:${{ github.sha }}
-        docker push $IMAGE_PATH --all-tags
+        docker push $IMAGE_PATH:${{ github.sha }}
+        
+        # Chỉ push tag latest nếu ở nhánh main
+        if [ "${{ github.ref }}" = "refs/heads/main" ]; then
+          docker tag evaluation-job:test $IMAGE_PATH:latest
+          docker push $IMAGE_PATH:latest
+        fi
 
-    # === BƯỚC 4: TRIỂN KHAI VÀ EVALUATE ===
+    # === BƯỚC 4: TRIỂN KHAI VÀ EVALUATE (CHỈ DÀNH CHO MAIN) ===
+    - name: Get GKE credentials
+      if: github.ref == 'refs/heads/main'
+      uses: google-github-actions/get-gke-credentials@v2
+      with:
+        cluster_name: ${{ env.GKE_CLUSTER }}
+        location: ${{ env.GKE_LOCATION }}
+
     - name: Apply manifests
       if: github.ref == 'refs/heads/main'
       run: |
         kubectl apply -f k8s/vector-db/qdrant.yaml
-        # THÊM: Deploy máy chủ LLM Ollama
+        # Deploy máy chủ LLM Ollama
         kubectl apply -f k8s/inference-worker/ollama.yaml 
         kubectl apply -f k8s/eval-orchestrator/deployment.yaml
         kubectl apply -f k8s/eval-orchestrator/service.yaml
