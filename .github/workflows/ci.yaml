@@ -226,22 +226,3 @@ jobs:
           kubectl logs job/evaluation-job -n ${{ env.K8S_NAMESPACE }} || true
           exit 1
         fi
-
-    # === BƯỚC 5: BUILD VÀ PUSH IMAGE (UI) ===
-    - name: Build UI Local
-      uses: docker/build-push-action@v5
-      with:
-        context: ./src/ui
-        file: ./src/ui/Dockerfile
-        load: true
-        tags: gout-ui:test
-        cache-from: type=gha
-        cache-to: type=gha,mode=max
-
-    - name: Push UI Image
-      run: |
-        IMAGE_PATH=${{ env.REGION }}-docker.pkg.dev/${{ env.PROJECT_ID }}/${{ env.REPO_NAME }}/gout-ui
-        docker tag gout-ui:test $IMAGE_PATH:latest
-        docker tag gout-ui:test $IMAGE_PATH:${{ github.sha }}
-        docker push $IMAGE_PATH --all-tags
-        }
