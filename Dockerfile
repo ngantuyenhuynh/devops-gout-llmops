@@ -1,15 +1,16 @@
 FROM python:3.11-slim
-
 WORKDIR /app
 
-# Cài đặt các thư viện cần thiết
-RUN pip install --no-cache-dir streamlit requests
+# Copy file requirements và cài đặt
+COPY requirements.txt .
+RUN pip install --no-cache-dir -r requirements.txt
 
-# Copy code vào container
-COPY app.py .
+# --- 2 DÒNG SINH TỬ ĐÂY RỒI ---
+COPY data/ ./data/
+COPY src/ ./src/
 
-# Streamlit mặc định chạy cổng 8501
-EXPOSE 8501
+# Copy file chạy chính ra ngoài
+COPY src/evaluation/main.py .
 
-# Lệnh khởi chạy
-CMD ["streamlit", "run", "app.py", "--server.port=8501", "--server.address=0.0.0.0"]
+# Lệnh chạy dành cho Job chấm điểm
+CMD ["python", "main.py"]
