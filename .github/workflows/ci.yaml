@@ -2,13 +2,15 @@ name: Build, Scan and Push Microservices to GCP
 
 on:
   push:
-    branches: [ "main" ]
+    branches: [ "main", "dev" ]
     paths:
       - 'src/eval-orchestrator/**'
       - 'src/data-ingestion/**'
       - 'src/evaluation-job/**'
       - 'k8s/**'
       - 'data/**'
+  pull_request:
+    branches: [ "main" ]
   workflow_dispatch:
 
 env:
@@ -72,9 +74,15 @@ jobs:
     - name: Push Eval-Orchestrator to Registry
       run: |
         IMAGE_PATH=${{ env.REGION }}-docker.pkg.dev/${{ env.PROJECT_ID }}/${{ env.REPO_NAME }}/eval-orchestrator
-        docker tag eval-orchestrator:test $IMAGE_PATH:latest
+        # Luôn push tag chứa mã SHA để lưu vết cho mọi nhánh (kể cả dev)
         docker tag eval-orchestrator:test $IMAGE_PATH:${{ github.sha }}
-        docker push $IMAGE_PATH --all-tags
+        docker push $IMAGE_PATH:${{ github.sha }}
+        
+        # CHỈ push tag :latest nếu code đang ở nhánh main
+        if [ "${{ github.ref }}" = "refs/heads/main" ]; then
+          docker tag eval-orchestrator:test $IMAGE_PATH:latest
+          docker push $IMAGE_PATH:latest
+        fi
 
     # === BƯỚC 3: BUILD VÀ QUÉT IMAGE (DATA-INGESTION) ===
     - name: Build Ingestion Local
@@ -106,7 +114,7 @@ jobs:
       uses: docker/build-push-action@v5
       with:
         context: .
-        file: ./Dockerfile
+        file: src/evaluation-job/Dockerfile
         load: true
         tags: evaluation-job:test
         cache-from: type=gha
@@ -119,21 +127,23 @@ jobs:
         docker tag evaluation-job:test $IMAGE_PATH:${{ github.sha }}
         docker push $IMAGE_PATH --all-tags
 
-    # === BƯỚC 4: TRIỂN KHAI VÀ EVALUATE (GIỮ NGUYÊN) ===
-    - name: Get GKE credentials
-      uses: google-github-actions/get-gke-credentials@v2
-      with:
-        cluster_name: ${{ env.GKE_CLUSTER }}
-        location: ${{ env.GKE_LOCATION }}
-        
+    # === BƯỚC 4: TRIỂN KHAI VÀ EVALUATE ===
     - name: Apply manifests
+      if: github.ref == 'refs/heads/main'
       run: |
         kubectl apply -f k8s/vector-db/qdrant.yaml
+        # THÊM: Deploy máy chủ LLM Ollama
+        kubectl apply -f k8s/inference-worker/ollama.yaml 
         kubectl apply -f k8s/eval-orchestrator/deployment.yaml
         kubectl apply -f k8s/eval-orchestrator/service.yaml
         kubectl apply -f k8s/eval-orchestrator/service-monitor.yaml
 
+        # Chạy Job nạp tri thức vào Qdrant
+        kubectl delete job gout-ingestion-job -n ${{ env.K8S_NAMESPACE }} --ignore-not-found=true
+        kubectl apply -f k8s/data-ingestion/job.yaml
+
     - name: Upsert OpenAI secret
+      if: github.ref == 'refs/heads/main'
       run: |
         kubectl create secret generic openai-secret \
           --from-literal=api-key='${{ secrets.OPENAI_API_KEY }}' \
@@ -141,6 +151,7 @@ jobs:
           --dry-run=client -o yaml | kubectl apply -f -
 
     - name: Upsert SMTP secret
+      if: github.ref == 'refs/heads/main'
       run: |
         kubectl create secret generic smtp-secret \
           --from-literal=username='${{ secrets.SMTP_AUTH_USERNAME }}' \
@@ -149,9 +160,11 @@ jobs:
           --dry-run=client -o yaml | kubectl apply -f -
 
     - name: Wait for eval-orchestrator rollout
+      if: github.ref == 'refs/heads/main'
       run: kubectl rollout status deployment/eval-orchestrator -n ${{ env.K8S_NAMESPACE }} --timeout=300s
 
     - name: Run evaluation job
+      if: github.ref == 'refs/heads/main'
       run: |
         kubectl delete job evaluation-job -n ${{ env.K8S_NAMESPACE }} --ignore-not-found=true
         kubectl apply -f k8s/evaluation-job/job.yaml
