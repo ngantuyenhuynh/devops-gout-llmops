@@ -98,30 +98,33 @@ def judge_sample(
     contexts: list[str],
     risk_level: str,
 ) -> dict[str, Any]:
-    # --- MOCKING: COMMENT LẠI ĐOẠN GỌI API THẬT ---
-    """
-    response = client.chat.completions.create(
-        model=JUDGE_MODEL,
-        temperature=0.0,
-        response_format={"type": "json_object"},
-        messages=[...],
-    )
-    content = response.choices[0].message.content or "{}"
-    """
     
-    # --- TRẢ VỀ ĐIỂM SỐ GIẢ ĐỂ TEST CI/CD ---
+    # === BƯỚC 1: BẠN COMMENT LẠI HOẶC XÓA LUÔN ĐOẠN NÀY ===
+    # response = client.chat.completions.create(
+    #     model=JUDGE_MODEL,
+    #     temperature=0.0,
+    #     response_format={"type": "json_object"},
+    #     messages=[
+    #         {"role": "system", "content": build_system_prompt()},
+    #         {"role": "user", "content": build_user_prompt(...)},
+    #     ],
+    # )
+    # content = response.choices[0].message.content or "{}"
+    # return json.loads(content)
+    # =======================================================
+
+    # === BƯỚC 2: THÊM ĐOẠN NÀY VÀO ĐỂ TRẢ VỀ ĐIỂM SỐ GIẢ ===
     fake_result = """
     {
-      "faithfulness": {"score": 0.95, "reason": "Mocked: Câu trả lời hoàn toàn chính xác theo phác đồ."},
-      "context_recall": {"score": 0.90, "reason": "Mocked: Lấy được đủ Context."},
-      "completeness": {"score": 4, "reason": "Mocked: Trả lời trọn vẹn."},
-      "hallucination_severity": {"level": 0, "reason": "Mocked: An toàn."},
+      "faithfulness": {"score": 0.95, "reason": "Mocked: Hạ tầng OK"},
+      "context_recall": {"score": 0.90, "reason": "Mocked: Lấy được đủ Context"},
+      "completeness": {"score": 4, "reason": "Mocked: Trả lời trọn vẹn"},
+      "hallucination_severity": {"level": 0, "reason": "Mocked: An toàn"},
       "safety_refusal": {"is_applicable": false, "correct_refusal": null, "reason": "Mocked: OK"},
       "overall_comment": "Mocked data for dry-run."
     }
     """
     return json.loads(fake_result)
-
 
 def compute_ragas_metrics(
     client: OpenAI,
@@ -131,12 +134,14 @@ def compute_ragas_metrics(
     answer: str,
     contexts: list[str],
 ) -> dict[str, Any]:
-    # --- MOCKING: COMMENT LẠI ĐOẠN GỌI API THẬT ---
-    """
-    response = client.chat.completions.create(...)
-    """
     
-    # --- TRẢ VỀ ĐIỂM SỐ RAGAS GIẢ ---
+    # === XÓA HOẶC COMMENT BỎ ĐOẠN GỌI API THẬT NÀY ===
+    # response = client.chat.completions.create(...)
+    # content = response.choices[0].message.content or "{}"
+    # return json.loads(content)
+    # =================================================
+
+    # === TRẢ VỀ ĐIỂM SỐ RAGAS GIẢ ===
     fake_result = """
     {
       "ragas_faithfulness": {"score": 0.92, "reason": "Mocked RAGAS"},
