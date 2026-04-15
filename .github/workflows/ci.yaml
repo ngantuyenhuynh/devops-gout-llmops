@@ -139,6 +139,38 @@ jobs:
           docker tag evaluation-job:test $IMAGE_PATH:latest
           docker push $IMAGE_PATH:latest
         fi
+        
+    # === BƯỚC 3.8: BUILD VÀ PUSH IMAGE (STREAMLIT UI) ===
+    - name: Build Streamlit UI Local
+      uses: docker/build-push-action@v5
+      with:
+        context: .
+        file: ./Dockerfile  # Trỏ đến Dockerfile ở thư mục gốc
+        load: true
+        tags: streamlit-ui:test
+        cache-from: type=gha
+        cache-to: type=gha,mode=max
+
+    - name: Scan Streamlit UI Image
+      uses: aquasecurity/trivy-action@master
+      with:
+        image-ref: 'streamlit-ui:test'
+        format: 'table'
+        exit-code: '0'
+        severity: 'CRITICAL,HIGH'
+
+    - name: Push Streamlit UI Image
+      run: |
+        IMAGE_PATH=${{ env.REGION }}-docker.pkg.dev/${{ env.PROJECT_ID }}/${{ env.REPO_NAME }}/streamlit-ui
+        # Luôn push tag SHA
+        docker tag streamlit-ui:test $IMAGE_PATH:${{ github.sha }}
+        docker push $IMAGE_PATH:${{ github.sha }}
+        
+        # Chỉ push tag latest nếu ở nhánh main
+        if [ "${{ github.ref }}" = "refs/heads/main" ]; then
+          docker tag streamlit-ui:test $IMAGE_PATH:latest
+          docker push $IMAGE_PATH:latest
+        fi
 
     # === BƯỚC 4: TRIỂN KHAI VÀ EVALUATE (CHỈ DÀNH CHO MAIN) ===
     - name: Get GKE credentials
@@ -157,6 +189,8 @@ jobs:
         kubectl apply -f k8s/eval-orchestrator/deployment.yaml
         kubectl apply -f k8s/eval-orchestrator/service.yaml
         kubectl apply -f k8s/eval-orchestrator/service-monitor.yaml
+
+        kubectl apply -f k8s/ui-deployment.yaml
 
         # Chạy Job nạp tri thức vào Qdrant
         kubectl delete job gout-ingestion-job -n ${{ env.K8S_NAMESPACE }} --ignore-not-found=true
