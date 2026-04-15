@@ -144,8 +144,8 @@ jobs:
     - name: Build Streamlit UI Local
       uses: docker/build-push-action@v5
       with:
-        context: .
-        file: ./Dockerfile  # Trỏ đến Dockerfile ở thư mục gốc
+        context: ./src/ui
+        file: ./src/ui/Dockerfile
         load: true
         tags: streamlit-ui:test
         cache-from: type=gha
