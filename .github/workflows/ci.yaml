@@ -230,7 +230,7 @@ jobs:
     - name: Build UI Local
       uses: docker/build-push-action@v5
       with:
-        context: ./src/ui # <--- Sửa lại cho đúng tên thư mục UI của bạn
+        context: ./src/ui
         file: ./src/ui/Dockerfile
         load: true
         tags: gout-ui:test
