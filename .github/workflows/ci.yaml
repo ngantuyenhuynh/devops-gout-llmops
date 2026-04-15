@@ -222,9 +222,10 @@ jobs:
       run: |
         kubectl delete job evaluation-job -n ${{ env.K8S_NAMESPACE }} --ignore-not-found=true
         kubectl apply -f k8s/evaluation-job/job.yaml
-        kubectl wait --for=condition=complete job/evaluation-job -n ${{ env.K8S_NAMESPACE }} --timeout=1800s || {
+        if ! kubectl wait --for=condition=complete job/evaluation-job -n ${{ env.K8S_NAMESPACE }} --timeout=1800s; then
           kubectl logs job/evaluation-job -n ${{ env.K8S_NAMESPACE }} || true
           exit 1
+        fi
 
     # === BƯỚC 5: BUILD VÀ PUSH IMAGE (UI) ===
     - name: Build UI Local
