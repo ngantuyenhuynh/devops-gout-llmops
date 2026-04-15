@@ -25,11 +25,7 @@ QUALITY_GATE_RAGAS_CONTEXT_RECALL_MIN = float(os.getenv("QUALITY_GATE_RAGAS_CONT
 
 # --- DANH SÁCH CÁC MÔ HÌNH CẦN ĐÁNH GIÁ ---
 MODELS_TO_TEST = [
-    "qwen2:1.5b",
-    "vistral:7b",
-    "vinallama:7b",
-    "phogpt:4b"
-]
+    "qwen2:1.5b"]
 
 def load_testset(path: Path) -> list[dict[str, Any]]:
     try:
