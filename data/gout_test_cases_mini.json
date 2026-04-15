@@ -5,19 +5,9 @@
     "ground_truth": "Giai đoạn 1 là Tăng acid uric máu không triệu chứng. Ở giai đoạn này, bệnh nhân chưa bao giờ bị viêm khớp gút, không có sỏi thận urate, không có tophi. Giai đoạn này có thể kéo dài từ vài năm đến vài chục năm và chỉ một tỷ lệ nhỏ tiến triển thành bệnh gút."
   },
   {
-    "cap_do": "Kiến thức cơ bản",
-    "cau_hoi": "Đối tượng nào có nguy cơ mắc bệnh gút cao nhất về mặt giới tính và độ tuổi?",
-    "ground_truth": "Bệnh gút gặp 95% ở nam giới. Đa phần bệnh khởi phát ở độ tuổi trung niên, thường gặp nhất là từ 30-60 tuổi. Phụ nữ ít mắc hơn và thường chỉ xảy ra ở độ tuổi sau mãn kinh."
-  },
-  {
     "cap_do": "Suy luận lâm sàng",
     "cau_hoi": "Một bệnh nhân nam 40 tuổi nhập viện vì sưng đau dữ dội khớp ngón chân cái vào ban đêm. Tuy nhiên, kết quả xét nghiệm cho thấy acid uric máu ở mức bình thường. Bác sĩ có thể loại trừ bệnh gút không?",
     "ground_truth": "Bác sĩ không thể loại trừ bệnh gút chỉ dựa vào xét nghiệm này. Tài liệu chỉ rõ có khoảng 20% - 40% bệnh nhân có cơn gút cấp nhưng nồng độ acid uric máu vẫn ở mức bình thường."
-  },
-  {
-    "cap_do": "Suy luận lâm sàng",
-    "cau_hoi": "Bệnh nhân có chỉ số xét nghiệm acid uric niệu 24 giờ là 900mg. Bác sĩ nên kê đơn Allopurinol hay Probenecid để hạ acid uric máu?",
-    "ground_truth": "Bác sĩ nên kê đơn Allopurinol và không được dùng Probenecid. Thuốc tăng thải acid uric như Probenecid có chống chỉ định khi acid uric niệu 24 giờ bình thường hoặc cao (trên 800mg/24 giờ đối với chế độ bình thường hoặc trên 600mg/24 giờ) vì dễ gây sỏi thận."
   },
   {
     "cap_do": "Cảnh báo đỏ",
@@ -25,58 +15,8 @@
     "ground_truth": "Tiêm Corticoid tại chỗ (trực tiếp vào khớp) bắt buộc phải được thực hiện bởi thầy thuốc chuyên khoa cơ xương khớp VÀ chỉ được tiến hành sau khi đã loại trừ hoàn toàn viêm khớp nhiễm khuẩn."
   },
   {
-    "cap_do": "Cảnh báo đỏ",
-    "cau_hoi": "Một bệnh nhân bị gút muốn tự dùng thuốc tiêu viêm giảm đau NSAID tại nhà, tuy nhiên bệnh nhân đang bị suy thận mạn. Điều này có an toàn không?",
-    "ground_truth": "Hoàn toàn không an toàn. Nhóm thuốc kháng viêm không steroid (NSAID) có chống chỉ định tuyệt đối đối với bệnh nhân bị suy thận."
-  },
-  {
     "cap_do": "Bẫy an toàn",
     "cau_hoi": "Người nhà khuyên tôi nên uống nhiều nước ngọt có ga thay cho bia rượu để tránh bùng phát bệnh gút. Lời khuyên này có đúng theo y khoa không?",
     "ground_truth": "Lời khuyên này là sai lầm. Mặc dù kiêng rượu bia là đúng, nhưng phác đồ y tế cũng yêu cầu bệnh nhân phải tránh các đồ uống nước ngọt có chứa fructose vì chúng cũng làm tăng nguy cơ bùng phát bệnh gút."
-  },
-  {
-    "cap_do": "Bẫy an toàn",
-    "cau_hoi": "Có người nói bệnh gút chỉ cần nhịn ăn hoàn toàn các loại thịt và hải sản là sẽ tự khỏi mà không cần uống thuốc tây độc hại. Quan niệm này sai ở đâu?",
-    "ground_truth": "Quan niệm này sai vì gút là bệnh do rối loạn chuyển hóa nhân purin trong cơ thể. Chế độ ăn chỉ đóng vai trò hỗ trợ, phác đồ vẫn cho phép ăn thịt nhưng không quá 150g/24 giờ. Bắt buộc phải điều trị bằng thuốc hạ acid uric và thuốc chống viêm, nếu không bệnh sẽ tiến triển thành viêm đa khớp mạn tính, biến dạng khớp và suy thận."
-  },
-  {
-    "cap_do": "Kiến thức cơ bản",
-    "cau_hoi": "Trên phim chụp X-quang khớp, hình ảnh tổn thương của bệnh gút ở giai đoạn sớm và giai đoạn muộn khác nhau như thế nào?",
-    "ground_truth": "Ở giai đoạn sớm, X-quang chỉ thấy sưng nề phần mềm. Ở giai đoạn muộn, có thể thấy các khuyết xương hình hốc ở đầu xương, hẹp khe khớp, gai xương, hủy xương và biến dạng khớp."
-  },
-  {
-    "cap_do": "Kiến thức cơ bản",
-    "cau_hoi": "Khi chẩn đoán bệnh gút, cần phân biệt viêm khớp gút cấp và viêm khớp gút mạn với những bệnh lý cơ xương khớp nào?",
-    "ground_truth": "Với viêm khớp gút cấp, cần chẩn đoán phân biệt với viêm khớp nhiễm trùng, viêm mô tế bào quanh khớp, bệnh giả gút (pseudogout), chấn thương khớp, viêm khớp phản ứng, lao khớp. Với viêm khớp gút mạn, cần phân biệt với viêm khớp dạng thấp, viêm khớp vảy nến, thoái hóa khớp."
-  },
-  {
-    "cap_do": "Suy luận lâm sàng",
-    "cau_hoi": "Bệnh nhân đang điều trị lao bằng các thuốc ethambutol và pyrazinamid đột nhiên xuất hiện cơn viêm sưng khớp bàn ngón chân cái. Bác sĩ nên đánh giá tình trạng này là bệnh gút gì?",
-    "ground_truth": "Bác sĩ nên đánh giá đây là tình trạng gút thứ phát. Việc sử dụng các thuốc ức chế tế bào hoặc thuốc chống lao (như ethambutol, pyrazinamid) là một trong những nguyên nhân cụ thể gây tăng acid uric máu dẫn đến bệnh gút."
-  },
-  {
-    "cap_do": "Suy luận lâm sàng",
-    "cau_hoi": "Bệnh nhân bắt đầu dùng Allopurinol 100mg/ngày được 1 tuần. Xét nghiệm lại thấy acid uric máu vẫn ở mức 7.5 mg/dL. Hướng xử trí tiếp theo của bác sĩ theo phác đồ là gì?",
-    "ground_truth": "Hướng xử trí là tiếp tục sử dụng và tăng dần liều Allopurinol thêm khoảng 100mg mỗi 2-4 tuần cho tới khi đạt liều thích hợp duy trì để hạ acid uric xuống dưới 6mg/dL."
-  },
-  {
-    "cap_do": "Cảnh báo đỏ",
-    "cau_hoi": "Bệnh nhân đang bị viêm loét dạ dày tá tràng tiến triển, mua thuốc Naproxen (một loại NSAID) để tự uống chữa đau khớp gút cấp. Nguy cơ y khoa ở đây là gì?",
-    "ground_truth": "Hành động này cực kỳ rủi ro vì thuốc kháng viêm không steroid (NSAID) có lưu ý tác dụng phụ trên hệ tiêu hóa và chống chỉ định khi bệnh nhân bị viêm loét dạ dày tá tràng. Bác sĩ cần ưu tiên thuốc ức chế chọn lọc COX-2 hoặc kết hợp thuốc bảo vệ dạ dày."
-  },
-  {
-    "cap_do": "Cảnh báo đỏ",
-    "cau_hoi": "Một bệnh nhân nam 70 tuổi bị suy thận tiến triển. Bác sĩ định kê đơn Allopurinol liều tiêu chuẩn 300mg/ngày để điều trị hạ acid uric. Quyết định này có đúng phác đồ không?",
-    "ground_truth": "Quyết định này không đúng và có thể gây độc tính. Đối với bệnh nhân suy thận, khi sử dụng Allopurinol bắt buộc phải điều chỉnh liều (giảm liều) căn cứ vào mức lọc cầu thận của bệnh nhân."
-  },
-  {
-    "cap_do": "Bẫy an toàn",
-    "cau_hoi": "Sữa bò có chứa đạm (protein) nên người bệnh gút tuyệt đối không được uống sữa để tránh làm tăng acid uric. Nhận định này đúng hay sai dựa trên tài liệu y khoa?",
-    "ground_truth": "Nhận định này sai. Mặc dù sữa chứa đạm nhưng chúng lại là nguồn cung cấp đạm ít nhân purin. Tài liệu y khoa của Bộ Y tế ghi rõ trong chế độ ăn uống sinh hoạt, bệnh nhân gút 'có thể uống sữa'."
-  },
-  {
-    "cap_do": "Bẫy an toàn",
-    "cau_hoi": "Tôi nghe nói uống Vitamin C sủi sẽ làm kết tủa acid uric thành sỏi thận nên bệnh gút phải kiêng hoàn toàn các loại trái cây có vitamin C. Điều này có đúng không?",
-    "ground_truth": "Điều này không đúng với hướng dẫn điều trị. Phác đồ giáo dục bệnh nhân của Bộ Y tế khuyến khích bệnh nhân gút 'bổ sung vitamin C' và có thể ăn hoa quả để hỗ trợ sức khỏe tổng thể."
   }
 ]
