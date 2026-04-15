@@ -147,28 +147,28 @@ jobs:
         context: ./src/ui
         file: ./src/ui/Dockerfile
         load: true
-        tags: streamlit-ui:test
+        tags: gout-ui:test # <--- Đã đổi tên thành gout-ui
         cache-from: type=gha
         cache-to: type=gha,mode=max
 
     - name: Scan Streamlit UI Image
       uses: aquasecurity/trivy-action@master
       with:
-        image-ref: 'streamlit-ui:test'
+        image-ref: 'gout-ui:test'
         format: 'table'
         exit-code: '0'
         severity: 'CRITICAL,HIGH'
 
     - name: Push Streamlit UI Image
       run: |
-        IMAGE_PATH=${{ env.REGION }}-docker.pkg.dev/${{ env.PROJECT_ID }}/${{ env.REPO_NAME }}/streamlit-ui
+        IMAGE_PATH=${{ env.REGION }}-docker.pkg.dev/${{ env.PROJECT_ID }}/${{ env.REPO_NAME }}/gout-ui
         # Luôn push tag SHA
-        docker tag streamlit-ui:test $IMAGE_PATH:${{ github.sha }}
+        docker tag gout-ui:test $IMAGE_PATH:${{ github.sha }}
         docker push $IMAGE_PATH:${{ github.sha }}
         
         # Chỉ push tag latest nếu ở nhánh main
         if [ "${{ github.ref }}" = "refs/heads/main" ]; then
-          docker tag streamlit-ui:test $IMAGE_PATH:latest
+          docker tag gout-ui:test $IMAGE_PATH:latest
           docker push $IMAGE_PATH:latest
         fi
 
