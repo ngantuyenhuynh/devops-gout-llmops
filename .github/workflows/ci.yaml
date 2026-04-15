@@ -100,6 +100,24 @@ jobs:
         IMAGE_PATH=${{ env.REGION }}-docker.pkg.dev/${{ env.PROJECT_ID }}/${{ env.REPO_NAME }}/data-ingestion
         docker tag data-ingestion:test $IMAGE_PATH:latest
         docker push $IMAGE_PATH:latest
+        
+    # === BƯỚC 3.5: BUILD VÀ PUSH IMAGE (EVALUATION-JOB) ===
+    - name: Build Evaluation Job Local
+      uses: docker/build-push-action@v5
+      with:
+        context: .
+        file: ./Dockerfile
+        load: true
+        tags: evaluation-job:test
+        cache-from: type=gha
+        cache-to: type=gha,mode=max
+
+    - name: Push Evaluation Job Image
+      run: |
+        IMAGE_PATH=${{ env.REGION }}-docker.pkg.dev/${{ env.PROJECT_ID }}/${{ env.REPO_NAME }}/evaluation-job
+        docker tag evaluation-job:test $IMAGE_PATH:latest
+        docker tag evaluation-job:test $IMAGE_PATH:${{ github.sha }}
+        docker push $IMAGE_PATH --all-tags
 
     # === BƯỚC 4: TRIỂN KHAI VÀ EVALUATE (GIỮ NGUYÊN) ===
     - name: Get GKE credentials
@@ -107,7 +125,7 @@ jobs:
       with:
         cluster_name: ${{ env.GKE_CLUSTER }}
         location: ${{ env.GKE_LOCATION }}
-
+        
     - name: Apply manifests
       run: |
         kubectl apply -f k8s/vector-db/qdrant.yaml
