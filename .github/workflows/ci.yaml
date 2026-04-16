@@ -21,6 +21,10 @@ env:
   GKE_LOCATION: asia-southeast1-a
   K8S_NAMESPACE: gout-eval
 
+concurrency:
+  group: gout-eval-namespace-lock
+  cancel-in-progress: false
+  
 jobs:
   build-push-and-evaluate:
     runs-on: ubuntu-latest
