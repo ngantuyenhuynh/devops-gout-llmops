@@ -4,7 +4,7 @@ metadata:
   name: ollama-worker
   namespace: gout-eval
 spec:
-  replicas: 3
+  replicas: 1
   selector:
     matchLabels:
       app: ollama-worker
