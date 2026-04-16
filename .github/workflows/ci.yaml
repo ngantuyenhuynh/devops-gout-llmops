@@ -217,12 +217,15 @@ jobs:
       if: github.ref == 'refs/heads/main'
       run: kubectl rollout status deployment/eval-orchestrator -n ${{ env.K8S_NAMESPACE }} --timeout=300s
 
-    - name: Run evaluation job
+    - name: Run Smoke Test (Mini Eval)
       if: github.ref == 'refs/heads/main'
       run: |
         kubectl delete job evaluation-job -n ${{ env.K8S_NAMESPACE }} --ignore-not-found=true
         kubectl apply -f k8s/evaluation-job/job.yaml
+        
         if ! kubectl wait --for=condition=complete job/evaluation-job -n ${{ env.K8S_NAMESPACE }} --timeout=1800s; then
+          echo "Smoke test thất bại!"
           kubectl logs job/evaluation-job -n ${{ env.K8S_NAMESPACE }} || true
           exit 1
         fi
+        echo "Smoke test thành công!"
