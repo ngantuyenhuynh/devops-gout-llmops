@@ -16,6 +16,8 @@ spec:
           value: http://eval-orchestrator-service:8000/ask
         - name: TESTSET_PATH
           value: /app/data/gout_test_cases_mini.json
+        - name: REQUEST_TIMEOUT
+          value: "300"
         - name: JUDGE_MODEL
           value: gpt-4o-mini
         - name: EVAL_MODEL_NAME
