@@ -17,7 +17,7 @@ spec:
         - name: TESTSET_PATH
           value: /app/data/gout_test_cases_mini.json
         - name: REQUEST_TIMEOUT
-          value: "300"
+          value: "None"
         - name: JUDGE_MODEL
           value: gpt-4o-mini
         - name: EVAL_MODEL_NAME

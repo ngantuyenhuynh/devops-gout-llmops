@@ -69,12 +69,30 @@ def append_jsonl(path: Path, record: dict[str, Any]) -> None:
 
 # CẬP NHẬT: Thêm tham số model_name để gửi lên Orchestrator
 def ask_model(question: str, model_name: str) -> dict[str, Any]:
-    response = requests.post(ORCHESTRATOR_URL, json={"question": question, "model_name": model_name}, timeout=REQUEST_TIMEOUT)
-    response.raise_for_status()
-    data = response.json()
-    if data.get("error"):
-        raise RuntimeError(f"Orchestrator returned error for question '{question}': {data['error']}")
-    return data
+    try:
+        # Thay timeout=REQUEST_TIMEOUT thành timeout=None để chờ vô tận
+        response = requests.post(
+            ORCHESTRATOR_URL, 
+            json={"question": question, "model_name": model_name}, 
+            timeout=None 
+        )
+        response.raise_for_status()
+        data = response.json()
+        
+        if data.get("error"):
+            print(f"\nLỗi từ Orchestrator: {data['error']}")
+            return {"answer": "Lỗi sinh text từ Orchestrator", "contexts": []}
+            
+        return data
+        
+    except Exception as e:
+        # Bắt mọi loại lỗi khác (sập mạng, từ chối kết nối...) để Job không bị Crash
+        print(f"\nLỗi kết nối Orchestrator (Bỏ qua câu này): {str(e)}")
+        return {
+            "answer": "Lỗi kết nối", 
+            "contexts": [],
+            "sources": []
+        }
 
 
 def extract_contexts(result: dict[str, Any]) -> list[str]:
