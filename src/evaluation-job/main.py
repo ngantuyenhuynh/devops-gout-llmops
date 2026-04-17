@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import json
 import os
+import threading
 from collections import defaultdict
 from pathlib import Path
 from typing import Any
@@ -61,12 +62,14 @@ def reset_output_files() -> None:
         if path.exists():
             path.unlink()
 
+file_write_lock = threading.Lock()
 
 def append_jsonl(path: Path, record: dict[str, Any]) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
-    with path.open("a", encoding="utf-8") as f:
-        f.write(json.dumps(record, ensure_ascii=False) + "\n")
 
+    with file_write_lock:
+        with path.open("a", encoding="utf-8") as f:
+            f.write(json.dumps(record, ensure_ascii=False) + "\n")
 
 # CẬP NHẬT: Thêm tham số model_name để gửi lên Orchestrator
 def ask_model(question: str, model_name: str) -> dict[str, Any]:
