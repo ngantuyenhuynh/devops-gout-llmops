@@ -9,7 +9,7 @@ metadata:
   name: eval-orchestrator
   namespace: gout-eval
 spec:
-  replicas: 3
+  replicas: 1
   selector:
     matchLabels:
       app: eval-orchestrator
