@@ -270,75 +270,89 @@ def evaluate_release_gate(summary: dict[str, Any]) -> dict[str, Any]:
     }
 
 
+def process_single_sample(idx: int, raw: dict[str, Any], current_model: str, client: OpenAI) -> dict[str, Any]:
+    sample = normalize_sample(raw, idx)
+    result = ask_model(sample["question"], current_model)
+    
+    contexts = extract_contexts(result)
+    answer = str(result.get("answer", "")).strip()
+
+    # Ghi log file Artifact
+    artifact = {
+        "question_id": sample["question_id"],
+        "question": sample["question"],
+        "ground_truth": sample["ground_truth"],
+        "risk_level": sample["risk_level"],
+        "answer": answer,
+        "contexts": contexts,
+        "sources": result.get("sources", []),
+    }
+    append_jsonl(ARTIFACTS_PATH, artifact)
+
+    judge_output = judge_sample(
+        client,
+        question=sample["question"],
+        ground_truth=sample["ground_truth"],
+        answer=answer,
+        contexts=contexts,
+        risk_level=sample["risk_level"],
+    )
+    ragas_output = compute_ragas_metrics(
+        client,
+        question=sample["question"],
+        ground_truth=sample["ground_truth"],
+        answer=answer,
+        contexts=contexts,
+    )
+
+    return {
+        "question_id": sample["question_id"],
+        "model_name": current_model,
+        "judge_model": JUDGE_MODEL,
+        "judge_output": judge_output,
+        "ragas_output": ragas_output,
+    }
+
 def main() -> None:
     if not os.getenv("OPENAI_API_KEY"):
         raise RuntimeError("OPENAI_API_KEY is required for evaluation job.")
 
     reset_output_files()
-
     client = OpenAI()
     rows = load_testset(DATA_PATH)
     judge_records: list[dict[str, Any]] = []
 
-    # CẬP NHẬT LỚN: Vòng lặp chấm điểm TẤT CẢ các model
+    # SỐ LUỒNG CHẠY SONG SONG (NÊN BẰNG VỚI SỐ REPLICA CỦA OLLAMA)
+    MAX_WORKERS = 3 
+
     for current_model in MODELS_TO_TEST:
-        print(f"\n🚀 ĐANG LẤY CÂU TRẢ LỜI TỪ MÔ HÌNH: {current_model}...")
+        print(f"\n🚀 ĐANG LẤY CÂU TRẢ LỜI TỪ MÔ HÌNH: {current_model} (Đa luồng: {MAX_WORKERS})...")
         
-        for idx, raw in enumerate(tqdm(rows, desc=f"Evaluating {current_model}")):
-            sample = normalize_sample(raw, idx)
-            
-            # Truyền tên model xuống Orchestrator
-            result = ask_model(sample["question"], current_model)
-            
-            contexts = extract_contexts(result)
-            answer = str(result.get("answer", "")).strip()
-
-            artifact = {
-                "question_id": sample["question_id"],
-                "question": sample["question"],
-                "ground_truth": sample["ground_truth"],
-                "risk_level": sample["risk_level"],
-                "answer": answer,
-                "contexts": contexts,
-                "sources": result.get("sources", []),
+        # SỬ DỤNG THREADPOOLEXECUTOR ĐỂ CHẠY SONG SONG
+        with ThreadPoolExecutor(max_workers=MAX_WORKERS) as executor:
+            # Gửi tất cả các task vào Pool
+            future_to_sample = {
+                executor.submit(process_single_sample, idx, raw, current_model, client): raw 
+                for idx, raw in enumerate(rows)
             }
-            append_jsonl(ARTIFACTS_PATH, artifact)
-
-            judge_output = judge_sample(
-                client,
-                question=sample["question"],
-                ground_truth=sample["ground_truth"],
-                answer=answer,
-                contexts=contexts,
-                risk_level=sample["risk_level"],
-            )
-            ragas_output = compute_ragas_metrics(
-                client,
-                question=sample["question"],
-                ground_truth=sample["ground_truth"],
-                answer=answer,
-                contexts=contexts,
-            )
-
-            judge_record = {
-                "question_id": sample["question_id"],
-                "model_name": current_model,  # Ghi nhận kết quả cho model tương ứng
-                "judge_model": JUDGE_MODEL,
-                "judge_output": judge_output,
-                "ragas_output": ragas_output,
-            }
-            judge_records.append(judge_record)
-            append_jsonl(JUDGE_PATH, judge_record)
+            
+            # Thu thập kết quả khi các luồng hoàn thành
+            for future in tqdm(as_completed(future_to_sample), total=len(rows), desc=f"Evaluating {current_model}"):
+                try:
+                    record = future.result()
+                    judge_records.append(record)
+                    append_jsonl(JUDGE_PATH, record)
+                except Exception as exc:
+                    print(f"\nLỗi khi xử lý một sample: {exc}")
 
     summary = aggregate(judge_records)
     SUMMARY_PATH.parent.mkdir(parents=True, exist_ok=True)
     SUMMARY_PATH.write_text(json.dumps(summary, ensure_ascii=False, indent=2), encoding="utf-8")
-    print("\n✅ KẾT QUẢ TỔNG HỢP (SUMMARY):")
+    print("\nKẾT QUẢ TỔNG HỢP (SUMMARY):")
     print(json.dumps(summary, ensure_ascii=False, indent=2))
 
     if not summary["release_gate"]["passed"]:
         raise SystemExit("Release gate failed: " + "; ".join(summary["release_gate"]["failures"]))
-
 
 if __name__ == "__main__":
     main()
