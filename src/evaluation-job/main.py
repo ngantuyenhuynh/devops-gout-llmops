@@ -326,7 +326,7 @@ def main() -> None:
     judge_records: list[dict[str, Any]] = []
 
     # SỐ LUỒNG CHẠY SONG SONG (NÊN BẰNG VỚI SỐ REPLICA CỦA OLLAMA)
-    MAX_WORKERS = 3 
+    MAX_WORKERS = 1
 
     for current_model in MODELS_TO_TEST:
         print(f"\n🚀 ĐANG LẤY CÂU TRẢ LỜI TỪ MÔ HÌNH: {current_model} (Đa luồng: {MAX_WORKERS})...")
