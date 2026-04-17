@@ -9,6 +9,7 @@ from typing import Any
 import requests
 from openai import OpenAI
 from tqdm import tqdm
+from concurrent.futures import ThreadPoolExecutor, as_completed # THÊM DÒNG NÀY
 
 DATA_PATH = Path(os.getenv("TESTSET_PATH", "/app/data/gout_test_cases.json"))
 ARTIFACTS_PATH = Path(os.getenv("ARTIFACTS_PATH", "/tmp/eval-artifacts.jsonl"))
