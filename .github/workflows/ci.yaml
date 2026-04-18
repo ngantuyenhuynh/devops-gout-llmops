@@ -14,12 +14,12 @@ on:
   workflow_dispatch:
 
 env:
-  PROJECT_ID: logical-carver-490713-d8
-  REGION: asia-southeast1
-  REPO_NAME: gout-llmops-repo
-  GKE_CLUSTER: cluster-1
-  GKE_LOCATION: asia-southeast1-a
-  K8S_NAMESPACE: gout-eval
+  PROJECT_ID: nt549-project         # SỬA: Thay bằng ID Project mới
+  REGION: asia-southeast1           # GIỮ NGUYÊN (Khu vực lưu Docker Image)
+  REPO_NAME: gout-llmops-repo       # GIỮ NGUYÊN (Tên kho chứa Image)
+  GKE_CLUSTER: gout-cluster         # SỬA: Tên cụm K8s mới của bạn
+  GKE_LOCATION: asia-southeast1-a   # GIỮ NGUYÊN (Vùng của cụm Zonal)
+  K8S_NAMESPACE: gout-eval          # GIỮ NGUYÊN
 
 concurrency:
   group: gout-eval-namespace-lock
