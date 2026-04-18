@@ -15,7 +15,9 @@ spec:
           enabled: true
           # Cấu hình lưu trữ cơ bản cho môi trường nhỏ/vừa
           persistence:
-            enabled: false 
+            enabled: false
+          datasource:
+            isDefault: false
         promtail:
           enabled: true
         grafana:
