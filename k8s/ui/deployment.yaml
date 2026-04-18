@@ -15,7 +15,7 @@ spec:
     spec:
       containers:
       - name: gout-ui
-        image: asia-southeast1-docker.pkg.dev/logical-carver-490713-d8/gout-llmops-repo/gout-ui:latest
+        image: asia-southeast1-docker.pkg.dev/nt549-project/gout-llmops-repo/gout-ui:latest
         imagePullPolicy: Always
         ports:
         - containerPort: 8501

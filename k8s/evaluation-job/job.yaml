@@ -9,7 +9,7 @@ spec:
       restartPolicy: Never
       containers:
       - name: evaluation-job
-        image: asia-southeast1-docker.pkg.dev/logical-carver-490713-d8/gout-llmops-repo/evaluation-job:latest
+        image: asia-southeast1-docker.pkg.dev/nt549-project/gout-llmops-repo/evaluation-job:latest
         imagePullPolicy: Always
         env:
         - name: ORCHESTRATOR_URL

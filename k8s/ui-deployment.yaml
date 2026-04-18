@@ -16,7 +16,7 @@ spec:
       containers:
       - name: ui-container
         # Thay bằng đường dẫn ảnh bạn vừa build và push lên Artifact Registry
-        image: asia-southeast1-docker.pkg.dev/logical-carver-490713-d8/gout-llmops-repo/gout-ui:latest
+        image: asia-southeast1-docker.pkg.dev/nt549-project/gout-llmops-repo/gout-ui:latest
         ports:
         - containerPort: 8501
 ---
