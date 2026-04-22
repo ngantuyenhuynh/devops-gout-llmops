@@ -1,24 +1,30 @@
-name: Build and Push Microservices to GCP
+name: Build, Scan and Push Microservices to GCP
 
 on:
   push:
-    branches: [ "main" ]
+    branches: [ "main", "dev" ]
     paths:
       - 'src/eval-orchestrator/**'
       - 'src/data-ingestion/**'
       - 'src/evaluation-job/**'
       - 'k8s/**'
       - 'data/**'
+  pull_request:
+    branches: [ "main" ]
   workflow_dispatch:
 
 env:
-  PROJECT_ID: logical-carver-490713-d8
-  REGION: asia-southeast1
-  REPO_NAME: gout-llmops-repo
-  GKE_CLUSTER: cluster-1
-  GKE_LOCATION: asia-southeast1-a
-  K8S_NAMESPACE: gout-eval
+  PROJECT_ID: nt549-project         # SỬA: Thay bằng ID Project mới
+  REGION: asia-southeast1           # GIỮ NGUYÊN (Khu vực lưu Docker Image)
+  REPO_NAME: gout-llmops-repo       # GIỮ NGUYÊN (Tên kho chứa Image)
+  GKE_CLUSTER: gout-cluster         # SỬA: Tên cụm K8s mới của bạn
+  GKE_LOCATION: asia-southeast1-a   # GIỮ NGUYÊN (Vùng của cụm Zonal)
+  K8S_NAMESPACE: gout-eval          # GIỮ NGUYÊN
 
+concurrency:
+  group: gout-eval-namespace-lock
+  cancel-in-progress: false
+  
 jobs:
   build-push-and-evaluate:
     runs-on: ubuntu-latest
@@ -26,69 +32,204 @@ jobs:
     - name: Checkout code
       uses: actions/checkout@v3
 
+    # === BƯỚC 1: QUÉT BẢO MẬT MÃ NGUỒN (FS SCAN) ===
+    - name: Run Trivy vulnerability scanner (Repo Scan)
+      uses: aquasecurity/trivy-action@master
+      with:
+        scan-type: 'fs'
+        ignore-unfixed: true
+        format: 'table'
+        exit-code: '0' # Thay bằng '1' nếu muốn pipeline dừng lại khi thấy lỗi nghiêm trọng
+        severity: 'CRITICAL,HIGH'
+
+    - name: Set up Docker Buildx
+      uses: docker/setup-buildx-action@v3
+
     - name: Authenticate to Google Cloud
       uses: google-github-actions/auth@v1
       with:
         credentials_json: '${{ secrets.GCP_CREDENTIALS }}'
 
-    - name: Set up Cloud SDK
-      uses: google-github-actions/setup-gcloud@v1
+    - name: Login to Artifact Registry
+      uses: docker/login-action@v3
+      with:
+        registry: ${{ env.REGION }}-docker.pkg.dev
+        username: _json_key
+        password: ${{ secrets.GCP_CREDENTIALS }}
 
-    - name: Configure Docker to use Google Artifact Registry
-      run: gcloud auth configure-docker ${{ env.REGION }}-docker.pkg.dev
+    # === BƯỚC 2: BUILD VÀ QUÉT IMAGE (EVAL-ORCHESTRATOR) ===
+    - name: Build Eval-Orchestrator Local
+      uses: docker/build-push-action@v5
+      with:
+        context: ./src/eval-orchestrator
+        load: true # Load vào local docker để Trivy quét
+        tags: eval-orchestrator:test
+        cache-from: type=gha
+        cache-to: type=gha,mode=max
 
+    - name: Scan Eval-Orchestrator Image
+      uses: aquasecurity/trivy-action@master
+      with:
+        image-ref: 'eval-orchestrator:test'
+        format: 'table'
+        exit-code: '0' 
+        severity: 'CRITICAL,HIGH'
+
+    - name: Push Eval-Orchestrator to Registry
+      run: |
+        IMAGE_PATH=${{ env.REGION }}-docker.pkg.dev/${{ env.PROJECT_ID }}/${{ env.REPO_NAME }}/eval-orchestrator
+        # Luôn push tag chứa mã SHA để lưu vết cho mọi nhánh (kể cả dev)
+        docker tag eval-orchestrator:test $IMAGE_PATH:${{ github.sha }}
+        docker push $IMAGE_PATH:${{ github.sha }}
+        
+        # CHỈ push tag :latest nếu code đang ở nhánh main
+        if [ "${{ github.ref }}" = "refs/heads/main" ]; then
+          docker tag eval-orchestrator:test $IMAGE_PATH:latest
+          docker push $IMAGE_PATH:latest
+        fi
+
+    # === BƯỚC 3: BUILD VÀ QUÉT IMAGE (DATA-INGESTION) ===
+    - name: Build Ingestion Local
+      uses: docker/build-push-action@v5
+      with:
+        context: .
+        file: src/data-ingestion/Dockerfile
+        load: true
+        tags: data-ingestion:test
+        cache-from: type=gha
+        cache-to: type=gha,mode=max
+
+    - name: Scan Ingestion Image
+      uses: aquasecurity/trivy-action@master
+      with:
+        image-ref: 'data-ingestion:test'
+        format: 'table'
+        exit-code: '0'
+        severity: 'CRITICAL'
+
+    - name: Push Ingestion Image
+      run: |
+        IMAGE_PATH=${{ env.REGION }}-docker.pkg.dev/${{ env.PROJECT_ID }}/${{ env.REPO_NAME }}/data-ingestion
+        # Luôn push tag SHA
+        docker tag data-ingestion:test $IMAGE_PATH:${{ github.sha }}
+        docker push $IMAGE_PATH:${{ github.sha }}
+        
+        # Chỉ push tag latest nếu ở nhánh main
+        if [ "${{ github.ref }}" = "refs/heads/main" ]; then
+          docker tag data-ingestion:test $IMAGE_PATH:latest
+          docker push $IMAGE_PATH:latest
+        fi
+        
+    # === BƯỚC 3.5: BUILD VÀ PUSH IMAGE (EVALUATION-JOB) ===
+    - name: Build Evaluation Job Local
+      uses: docker/build-push-action@v5
+      with:
+        context: .
+        file: src/evaluation-job/Dockerfile
+        load: true
+        tags: evaluation-job:test
+        cache-from: type=gha
+        cache-to: type=gha,mode=max
+
+    - name: Push Evaluation Job Image
+      run: |
+        IMAGE_PATH=${{ env.REGION }}-docker.pkg.dev/${{ env.PROJECT_ID }}/${{ env.REPO_NAME }}/evaluation-job
+        # Luôn push tag SHA
+        docker tag evaluation-job:test $IMAGE_PATH:${{ github.sha }}
+        docker push $IMAGE_PATH:${{ github.sha }}
+        
+        # Chỉ push tag latest nếu ở nhánh main
+        if [ "${{ github.ref }}" = "refs/heads/main" ]; then
+          docker tag evaluation-job:test $IMAGE_PATH:latest
+          docker push $IMAGE_PATH:latest
+        fi
+        
+    # === BƯỚC 3.8: BUILD VÀ PUSH IMAGE (STREAMLIT UI) ===
+    - name: Build Streamlit UI Local
+      uses: docker/build-push-action@v5
+      with:
+        context: ./src/ui
+        file: ./src/ui/Dockerfile
+        load: true
+        tags: gout-ui:test # <--- Đã đổi tên thành gout-ui
+        cache-from: type=gha
+        cache-to: type=gha,mode=max
+
+    - name: Scan Streamlit UI Image
+      uses: aquasecurity/trivy-action@master
+      with:
+        image-ref: 'gout-ui:test'
+        format: 'table'
+        exit-code: '0'
+        severity: 'CRITICAL,HIGH'
+
+    - name: Push Streamlit UI Image
+      run: |
+        IMAGE_PATH=${{ env.REGION }}-docker.pkg.dev/${{ env.PROJECT_ID }}/${{ env.REPO_NAME }}/gout-ui
+        # Luôn push tag SHA
+        docker tag gout-ui:test $IMAGE_PATH:${{ github.sha }}
+        docker push $IMAGE_PATH:${{ github.sha }}
+        
+        # Chỉ push tag latest nếu ở nhánh main
+        if [ "${{ github.ref }}" = "refs/heads/main" ]; then
+          docker tag gout-ui:test $IMAGE_PATH:latest
+          docker push $IMAGE_PATH:latest
+        fi
+
+    # === BƯỚC 4: TRIỂN KHAI VÀ EVALUATE (CHỈ DÀNH CHO MAIN) ===
     - name: Get GKE credentials
+      if: github.ref == 'refs/heads/main'
       uses: google-github-actions/get-gke-credentials@v2
       with:
         cluster_name: ${{ env.GKE_CLUSTER }}
         location: ${{ env.GKE_LOCATION }}
 
-    - name: Build and Push Eval-Orchestrator
-      run: |
-        IMAGE_PATH=${{ env.REGION }}-docker.pkg.dev/${{ env.PROJECT_ID }}/${{ env.REPO_NAME }}/eval-orchestrator
-        cd src/eval-orchestrator
-        docker build -t $IMAGE_PATH:latest -t $IMAGE_PATH:${{ github.sha }} .
-        docker push $IMAGE_PATH --all-tags
-
-    - name: Build and Push Ingestion Image
-      run: |
-        IMAGE_PATH=${{ env.REGION }}-docker.pkg.dev/${{ env.PROJECT_ID }}/${{ env.REPO_NAME }}/data-ingestion
-        docker build -t $IMAGE_PATH:latest -f src/data-ingestion/Dockerfile .
-        docker push $IMAGE_PATH:latest
-
-    - name: Build and Push Evaluation-Job
-      run: |
-        IMAGE_PATH=${{ env.REGION }}-docker.pkg.dev/${{ env.PROJECT_ID }}/${{ env.REPO_NAME }}/evaluation-job
-        docker build -t $IMAGE_PATH:latest -f src/evaluation-job/Dockerfile .
-        docker push $IMAGE_PATH:latest
-
     - name: Apply manifests
+      if: github.ref == 'refs/heads/main'
       run: |
         kubectl apply -f k8s/vector-db/qdrant.yaml
+        # Deploy máy chủ LLM Ollama
+        kubectl apply -f k8s/inference-worker/ollama.yaml 
         kubectl apply -f k8s/eval-orchestrator/deployment.yaml
         kubectl apply -f k8s/eval-orchestrator/service.yaml
+        kubectl apply -f k8s/eval-orchestrator/service-monitor.yaml
+
+        kubectl apply -f k8s/ui-deployment.yaml
+
+        # Chạy Job nạp tri thức vào Qdrant
+        kubectl delete job gout-ingestion-job -n ${{ env.K8S_NAMESPACE }} --ignore-not-found=true
+        kubectl apply -f k8s/data-ingestion/job.yaml
 
     - name: Upsert OpenAI secret
+      if: github.ref == 'refs/heads/main'
       run: |
         kubectl create secret generic openai-secret \
           --from-literal=api-key='${{ secrets.OPENAI_API_KEY }}' \
           --namespace=${{ env.K8S_NAMESPACE }} \
           --dry-run=client -o yaml | kubectl apply -f -
 
+    - name: Upsert SMTP secret
+      if: github.ref == 'refs/heads/main'
+      run: |
+        kubectl create secret generic smtp-secret \
+          --from-literal=username='${{ secrets.SMTP_AUTH_USERNAME }}' \
+          --from-literal=password='${{ secrets.SMTP_AUTH_PASSWORD }}' \
+          --namespace=monitoring \
+          --dry-run=client -o yaml | kubectl apply -f -
+
     - name: Wait for eval-orchestrator rollout
+      if: github.ref == 'refs/heads/main'
       run: kubectl rollout status deployment/eval-orchestrator -n ${{ env.K8S_NAMESPACE }} --timeout=300s
 
-    - name: Run evaluation job
+    - name: Run Smoke Test (Mini Eval)
+      if: github.ref == 'refs/heads/main'
       run: |
         kubectl delete job evaluation-job -n ${{ env.K8S_NAMESPACE }} --ignore-not-found=true
         kubectl apply -f k8s/evaluation-job/job.yaml
-        kubectl wait --for=condition=complete job/evaluation-job -n ${{ env.K8S_NAMESPACE }} --timeout=1800s || {
+        
+        if ! kubectl wait --for=condition=complete job/evaluation-job -n ${{ env.K8S_NAMESPACE }} --timeout=1800s; then
+          echo "Smoke test thất bại!"
           kubectl logs job/evaluation-job -n ${{ env.K8S_NAMESPACE }} || true
-          kubectl describe job/evaluation-job -n ${{ env.K8S_NAMESPACE }} || true
-          kubectl get pods -n ${{ env.K8S_NAMESPACE }} -l job-name=evaluation-job -o wide || true
           exit 1
-        }
-
-    - name: Print evaluation logs
-      if: always()
-      run: kubectl logs job/evaluation-job -n ${{ env.K8S_NAMESPACE }} || true
+        fi
+        echo "Smoke test thành công!"

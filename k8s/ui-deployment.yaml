@@ -1,0 +1,36 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: gout-ui-deployment
+  namespace: gout-eval
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: gout-ui
+  template:
+    metadata:
+      labels:
+        app: gout-ui
+    spec:
+      containers:
+      - name: ui-container
+        # Thay bằng đường dẫn ảnh bạn vừa build và push lên Artifact Registry
+        image: asia-southeast1-docker.pkg.dev/nt549-project/gout-llmops-repo/gout-ui:latest
+        ports:
+        - containerPort: 8501
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: gout-ui-service
+  namespace: gout-eval
+spec:
+  selector:
+    app: gout-ui
+  ports:
+    - protocol: TCP
+      port: 80
+      targetPort: 8501
+  # Dùng LoadBalancer để lấy IP công cộng nếu bạn muốn show web cho hội đồng
+  type: LoadBalancer

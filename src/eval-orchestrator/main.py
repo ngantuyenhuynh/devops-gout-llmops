@@ -5,35 +5,46 @@ from langchain_qdrant import QdrantVectorStore
 from qdrant_client import QdrantClient
 import requests
 
+from prometheus_fastapi_instrumentator import Instrumentator
+from langfuse.decorators import observe, langfuse_context
+
 app = FastAPI(title="Gout-LLM RAG API")
+
+# Kích hoạt Prometheus Metrics /metrics
+Instrumentator().instrument(app).expose(app)
 
 # Cấu hình đường dẫn nội bộ K8s
 QDRANT_URL = "http://qdrant-service:6333"
 OLLAMA_URL = "http://ollama-service:11434/api/generate"
 COLLECTION_NAME = "gout_knowledge_base"
 
-# 1. Khởi tạo mô hình Embedding (Bắt buộc phải giống hệt lúc nạp dữ liệu)
 print("Đang tải model Embedding...")
 embeddings = HuggingFaceEmbeddings(model_name="sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2")
 client = QdrantClient(url=QDRANT_URL)
 vector_store = QdrantVectorStore(client=client, collection_name=COLLECTION_NAME, embedding=embeddings)
 
+# 1. CẬP NHẬT Ở ĐÂY: Thêm model_name vào Request
 class QuestionRequest(BaseModel):
     question: str
     model_name: str | None = None
 
+# Langfuse theo dõi toàn bộ luồng
+@observe(name="Gout_RAG_Pipeline")
 @app.post("/ask")
 def ask_gout_bot(req: QuestionRequest):
-    # 2. RETRIEVAL: Lục lọi Vector DB để tìm top 3 đoạn tài liệu sát nghĩa nhất
+    # 2. CẬP NHẬT Ở ĐÂY: Gắn thêm tên model vào Langfuse để lên Dashboard dễ lọc
+    langfuse_context.update_current_trace(
+        input=req.question,
+        metadata={"model_used": req.model_name} 
+    )
+
     try:
         docs = vector_store.similarity_search(req.question, k=3)
         context = "\n---\n".join([doc.page_content for doc in docs])
-        # Lấy tên file nguồn (PDF hoặc JSON) để làm bằng chứng
         sources = list(set([doc.metadata.get("source", "Unknown") for doc in docs]))
     except Exception as e:
         return {"error": f"Lỗi khi kết nối Qdrant: {str(e)}"}
 
-    # 3. AUGMENTED: Gắn tài liệu vào Prompt để "ép" AI trả lời chuẩn
     prompt = f"""Bạn là một bác sĩ chuyên khoa về bệnh Gút (Gout). 
 Nhiệm vụ của bạn là trả lời câu hỏi của bệnh nhân DỰA VÀO TÀI LIỆU Y KHOA được cung cấp dưới đây.
 Tuyệt đối không được bịa đặt. Nếu tài liệu không có thông tin, hãy trả lời: "Dựa theo phác đồ hiện tại, tôi không tìm thấy thông tin về vấn đề này."
@@ -44,7 +55,7 @@ TÀI LIỆU Y KHOA:
 CÂU HỎI: {req.question}
 TRẢ LỜI:"""
 
-    # 4. GENERATION: Gửi sang Ollama (Đảm bảo bạn nhập đúng tên model đang chạy trong Ollama nhé)
+    # 3. CẬP NHẬT Ở ĐÂY: Truyền biến model_name vào payload của Ollama
     payload = {
         "model": req.model_name or "qwen2:1.5b",
         "prompt": prompt,
@@ -55,11 +66,16 @@ TRẢ LỜI:"""
         response = requests.post(OLLAMA_URL, json=payload)
         response_data = response.json()
         
+        answer = response_data.get("response", "Lỗi sinh text từ LLM")
+        
+        # Lưu kết quả trả về vào Langfuse Trace
+        langfuse_context.update_current_trace(output=answer)
+        
         return {
             "question": req.question,
-            "answer": response_data.get("response", "Lỗi sinh text từ LLM"),
+            "answer": answer,
             "sources": sources,
-            "context_used": context # In ra để debug xem nó tìm đúng bài không
+            "context_used": context 
         }
     except Exception as e:
         return {"error": f"Lỗi khi gọi Ollama: {str(e)}"}

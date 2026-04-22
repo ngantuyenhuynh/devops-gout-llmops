@@ -3,10 +3,13 @@ kind: Service
 metadata:
   name: eval-orchestrator-service
   namespace: gout-eval
+  labels:
+    app: eval-orchestrator
 spec:
   selector:
     app: eval-orchestrator
   ports:
-    - protocol: TCP
+    - name: http
+      protocol: TCP
       port: 8000
       targetPort: 8000

@@ -1,0 +1,69 @@
+name: Full RAG Evaluation (Manual)
+
+on:
+  workflow_dispatch:
+
+concurrency:
+  group: gout-eval-namespace-lock
+  cancel-in-progress: false
+
+env:
+  PROJECT_ID: logical-carver-490713-d8
+  REGION: asia-southeast1
+  GKE_CLUSTER: cluster-1
+  GKE_LOCATION: asia-southeast1-a
+  K8S_NAMESPACE: gout-eval
+
+jobs:
+  full-evaluation:
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v3
+
+    - name: Authenticate to Google Cloud
+      uses: google-github-actions/auth@v1
+      with:
+        credentials_json: '${{ secrets.GCP_CREDENTIALS }}'
+
+    - name: Get GKE credentials
+      uses: google-github-actions/get-gke-credentials@v2
+      with:
+        cluster_name: ${{ env.GKE_CLUSTER }}
+        location: ${{ env.GKE_LOCATION }}
+
+    - name: Run Full Evaluation Job
+      run: |
+        # Thay thế file mini bằng file full 58 câu
+        sed -i 's/gout_test_cases_mini.json/gout_test_cases.json/g' k8s/evaluation-job/job.yaml
+        
+        kubectl delete job evaluation-job -n ${{ env.K8S_NAMESPACE }} --ignore-not-found=true
+        kubectl apply -f k8s/evaluation-job/job.yaml
+        
+        echo "Đang chờ đánh giá toàn diện (có thể mất 3-5 tiếng)..."
+        
+        # Vòng lặp chờ 5 tiếng (18000 giây) tránh đứt token GKE
+        TIMEOUT=18000 
+        ELAPSED=0
+        SLEEP_TIME=120 
+        
+        while [ $ELAPSED -lt $TIMEOUT ]; do
+          STATUS=$(kubectl get job evaluation-job -n ${{ env.K8S_NAMESPACE }} -o jsonpath='{.status.conditions[?(@.type=="Complete")].status}' 2>/dev/null || echo "Unknown")
+          FAILED=$(kubectl get job evaluation-job -n ${{ env.K8S_NAMESPACE }} -o jsonpath='{.status.conditions[?(@.type=="Failed")].status}' 2>/dev/null || echo "Unknown")
+          
+          if [ "$STATUS" == "True" ]; then
+            echo "Job Đánh giá đã hoàn tất thành công!"
+            exit 0
+          elif [ "$FAILED" == "True" ]; then
+            echo "Job Đánh giá đã thất bại! Đang lấy log..."
+            kubectl logs job/evaluation-job -n ${{ env.K8S_NAMESPACE }} || true
+            exit 1
+          fi
+          
+          echo "Vẫn đang chấm điểm... (Đã trôi qua $((ELAPSED/60)) phút)"
+          sleep $SLEEP_TIME
+          ELAPSED=$((ELAPSED + SLEEP_TIME))
+        done
+        
+        echo "Quá thời gian 5 tiếng (Timeout)!"
+        exit 1

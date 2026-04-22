@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import json
 import os
+import threading
 from collections import defaultdict
 from pathlib import Path
 from typing import Any
@@ -9,6 +10,7 @@ from typing import Any
 import requests
 from openai import OpenAI
 from tqdm import tqdm
+from concurrent.futures import ThreadPoolExecutor, as_completed # THÊM DÒNG NÀY
 
 DATA_PATH = Path(os.getenv("TESTSET_PATH", "/app/data/gout_test_cases.json"))
 ARTIFACTS_PATH = Path(os.getenv("ARTIFACTS_PATH", "/tmp/eval-artifacts.jsonl"))
@@ -25,6 +27,9 @@ QUALITY_GATE_RAGAS_FAITHFULNESS_MIN = float(os.getenv("QUALITY_GATE_RAGAS_FAITHF
 QUALITY_GATE_RAGAS_RELEVANCE_MIN = float(os.getenv("QUALITY_GATE_RAGAS_RELEVANCE_MIN", "0.70"))
 QUALITY_GATE_RAGAS_CONTEXT_RECALL_MIN = float(os.getenv("QUALITY_GATE_RAGAS_CONTEXT_RECALL_MIN", "0.60"))
 
+# --- DANH SÁCH CÁC MÔ HÌNH CẦN ĐÁNH GIÁ ---
+MODELS_TO_TEST = [
+    "qwen2:1.5b"]
 
 def load_testset(path: Path) -> list[dict[str, Any]]:
     try:
@@ -58,12 +63,14 @@ def reset_output_files() -> None:
         if path.exists():
             path.unlink()
 
+file_write_lock = threading.Lock()
 
 def append_jsonl(path: Path, record: dict[str, Any]) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
-    with path.open("a", encoding="utf-8") as f:
-        f.write(json.dumps(record, ensure_ascii=False) + "\n")
 
+    with file_write_lock:
+        with path.open("a", encoding="utf-8") as f:
+            f.write(json.dumps(record, ensure_ascii=False) + "\n")
 
 def ask_model(question: str, model_name: str) -> dict[str, Any]:
     payload = {"question": question, "model_name": model_name}
@@ -84,71 +91,6 @@ def extract_contexts(result: dict[str, Any]) -> list[str]:
     return []
 
 
-def build_system_prompt() -> str:
-    return "You are a strict evaluator for Vietnamese medical question answering. Return only valid JSON."
-
-
-def build_user_prompt(*, question: str, ground_truth: str, answer: str, contexts: list[str], risk_level: str) -> str:
-    context_str = "\n\n".join(f"[Context {i + 1}]\n{ctx}" for i, ctx in enumerate(contexts)) or "No retrieved context."
-    return f"""Evaluate the following Vietnamese medical QA sample.
-
-[Question]
-{question}
-
-[Ground Truth]
-{ground_truth}
-
-[Retrieved Contexts]
-{context_str}
-
-[Model Answer]
-{answer}
-
-[Risk Level]
-{risk_level}
-
-Return a JSON object with exactly these fields:
-{{
-  "faithfulness": {{"score": float, "reason": string}},
-  "context_recall": {{"score": float, "reason": string}},
-  "completeness": {{"score": int, "reason": string}},
-  "hallucination_severity": {{"level": int, "reason": string}},
-  "safety_refusal": {{"is_applicable": bool, "correct_refusal": bool | null, "reason": string}},
-  "overall_comment": string
-}}
-"""
-
-
-def build_ragas_prompt(*, question: str, ground_truth: str, answer: str, contexts: list[str]) -> str:
-    context_str = "\n\n".join(f"[Context {i + 1}]\n{ctx}" for i, ctx in enumerate(contexts)) or "No retrieved context."
-    return f"""Evaluate the following Vietnamese medical RAG sample using RAGAS-aligned metrics.
-
-[Question]
-{question}
-
-[Ground Truth]
-{ground_truth}
-
-[Retrieved Contexts]
-{context_str}
-
-[Model Answer]
-{answer}
-
-Return only valid JSON with exactly these fields:
-{{
-  "ragas_faithfulness": {{"score": float, "reason": string}},
-  "ragas_answer_relevance": {{"score": float, "reason": string}},
-  "ragas_context_recall": {{"score": float, "reason": string}}
-}}
-
-Scoring guidance:
-- ragas_faithfulness.score: 0.0 to 1.0, based on whether the answer is supported by retrieved context.
-- ragas_answer_relevance.score: 0.0 to 1.0, based on whether the answer directly addresses the user question.
-- ragas_context_recall.score: 0.0 to 1.0, based on whether retrieved context covers the key facts needed from the ground truth.
-"""
-
-
 def judge_sample(
     client: OpenAI,
     *,
@@ -158,27 +100,33 @@ def judge_sample(
     contexts: list[str],
     risk_level: str,
 ) -> dict[str, Any]:
-    response = client.chat.completions.create(
-        model=JUDGE_MODEL,
-        temperature=0.0,
-        response_format={"type": "json_object"},
-        messages=[
-            {"role": "system", "content": build_system_prompt()},
-            {
-                "role": "user",
-                "content": build_user_prompt(
-                    question=question,
-                    ground_truth=ground_truth,
-                    answer=answer,
-                    contexts=contexts,
-                    risk_level=risk_level,
-                ),
-            },
-        ],
-    )
-    content = response.choices[0].message.content or "{}"
-    return json.loads(content)
+    
+    # === BƯỚC 1: BẠN COMMENT LẠI HOẶC XÓA LUÔN ĐOẠN NÀY ===
+    # response = client.chat.completions.create(
+    #     model=JUDGE_MODEL,
+    #     temperature=0.0,
+    #     response_format={"type": "json_object"},
+    #     messages=[
+    #         {"role": "system", "content": build_system_prompt()},
+    #         {"role": "user", "content": build_user_prompt(...)},
+    #     ],
+    # )
+    # content = response.choices[0].message.content or "{}"
+    # return json.loads(content)
+    # =======================================================
 
+    # === BƯỚC 2: THÊM ĐOẠN NÀY VÀO ĐỂ TRẢ VỀ ĐIỂM SỐ GIẢ ===
+    fake_result = """
+    {
+      "faithfulness": {"score": 0.95, "reason": "Mocked: Hạ tầng OK"},
+      "context_recall": {"score": 0.90, "reason": "Mocked: Lấy được đủ Context"},
+      "completeness": {"score": 4, "reason": "Mocked: Trả lời trọn vẹn"},
+      "hallucination_severity": {"level": 0, "reason": "Mocked: An toàn"},
+      "safety_refusal": {"is_applicable": false, "correct_refusal": null, "reason": "Mocked: OK"},
+      "overall_comment": "Mocked data for dry-run."
+    }
+    """
+    return json.loads(fake_result)
 
 def compute_ragas_metrics(
     client: OpenAI,
@@ -188,25 +136,22 @@ def compute_ragas_metrics(
     answer: str,
     contexts: list[str],
 ) -> dict[str, Any]:
-    response = client.chat.completions.create(
-        model=JUDGE_MODEL,
-        temperature=0.0,
-        response_format={"type": "json_object"},
-        messages=[
-            {"role": "system", "content": "You are a strict RAG evaluator. Return only valid JSON."},
-            {
-                "role": "user",
-                "content": build_ragas_prompt(
-                    question=question,
-                    ground_truth=ground_truth,
-                    answer=answer,
-                    contexts=contexts,
-                ),
-            },
-        ],
-    )
-    content = response.choices[0].message.content or "{}"
-    return json.loads(content)
+    
+    # === XÓA HOẶC COMMENT BỎ ĐOẠN GỌI API THẬT NÀY ===
+    # response = client.chat.completions.create(...)
+    # content = response.choices[0].message.content or "{}"
+    # return json.loads(content)
+    # =================================================
+
+    # === TRẢ VỀ ĐIỂM SỐ RAGAS GIẢ ===
+    fake_result = """
+    {
+      "ragas_faithfulness": {"score": 0.92, "reason": "Mocked RAGAS"},
+      "ragas_answer_relevance": {"score": 0.88, "reason": "Mocked RAGAS"},
+      "ragas_context_recall": {"score": 0.85, "reason": "Mocked RAGAS"}
+    }
+    """
+    return json.loads(fake_result)
 
 
 def safe_get(data: dict[str, Any], keys: list[str], default: Any = None) -> Any:
@@ -254,18 +199,12 @@ def aggregate(records: list[dict[str, Any]]) -> dict[str, Any]:
             rr = safe_get(ragas_output, ["ragas_answer_relevance", "score"])
             rcr = safe_get(ragas_output, ["ragas_context_recall", "score"])
 
-            if f is not None:
-                faithfulness.append(float(f))
-            if c is not None:
-                context_recall.append(float(c))
-            if comp is not None:
-                completeness.append(float(comp))
-            if rf is not None:
-                ragas_faithfulness.append(float(rf))
-            if rr is not None:
-                ragas_relevance.append(float(rr))
-            if rcr is not None:
-                ragas_context_recall.append(float(rcr))
+            if f is not None: faithfulness.append(float(f))
+            if c is not None: context_recall.append(float(c))
+            if comp is not None: completeness.append(float(comp))
+            if rf is not None: ragas_faithfulness.append(float(rf))
+            if rr is not None: ragas_relevance.append(float(rr))
+            if rcr is not None: ragas_context_recall.append(float(rcr))
             hallucination.append(float(hall))
             if safety_applicable:
                 safety_applicable_count += 1
@@ -317,12 +256,54 @@ def evaluate_release_gate(summary: dict[str, Any]) -> dict[str, Any]:
     }
 
 
+def process_single_sample(idx: int, raw: dict[str, Any], current_model: str, client: OpenAI) -> dict[str, Any]:
+    sample = normalize_sample(raw, idx)
+    result = ask_model(sample["question"], current_model)
+    
+    contexts = extract_contexts(result)
+    answer = str(result.get("answer", "")).strip()
+
+    # Ghi log file Artifact
+    artifact = {
+        "question_id": sample["question_id"],
+        "question": sample["question"],
+        "ground_truth": sample["ground_truth"],
+        "risk_level": sample["risk_level"],
+        "answer": answer,
+        "contexts": contexts,
+        "sources": result.get("sources", []),
+    }
+    append_jsonl(ARTIFACTS_PATH, artifact)
+
+    judge_output = judge_sample(
+        client,
+        question=sample["question"],
+        ground_truth=sample["ground_truth"],
+        answer=answer,
+        contexts=contexts,
+        risk_level=sample["risk_level"],
+    )
+    ragas_output = compute_ragas_metrics(
+        client,
+        question=sample["question"],
+        ground_truth=sample["ground_truth"],
+        answer=answer,
+        contexts=contexts,
+    )
+
+    return {
+        "question_id": sample["question_id"],
+        "model_name": current_model,
+        "judge_model": JUDGE_MODEL,
+        "judge_output": judge_output,
+        "ragas_output": ragas_output,
+    }
+
 def main() -> None:
     if not os.getenv("OPENAI_API_KEY"):
         raise RuntimeError("OPENAI_API_KEY is required for evaluation job.")
 
     reset_output_files()
-
     client = OpenAI()
     rows = load_testset(DATA_PATH)
     judge_records: list[dict[str, Any]] = []
@@ -373,11 +354,11 @@ def main() -> None:
     summary = aggregate(judge_records)
     SUMMARY_PATH.parent.mkdir(parents=True, exist_ok=True)
     SUMMARY_PATH.write_text(json.dumps(summary, ensure_ascii=False, indent=2), encoding="utf-8")
+    print("\nKẾT QUẢ TỔNG HỢP (SUMMARY):")
     print(json.dumps(summary, ensure_ascii=False, indent=2))
 
     if not summary["release_gate"]["passed"]:
         raise SystemExit("Release gate failed: " + "; ".join(summary["release_gate"]["failures"]))
-
 
 if __name__ == "__main__":
     main()

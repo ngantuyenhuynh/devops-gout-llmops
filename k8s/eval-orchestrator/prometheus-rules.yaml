@@ -1,0 +1,28 @@
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: gout-llm-rules
+  namespace: monitoring
+  labels:
+    release: monitoring-stack # Phải khớp với label của Prometheus Operator
+spec:
+  groups:
+  - name: GoutLLMAlerts
+    rules:
+    - alert: API_Orchestrator_Down
+      expr: up{job="eval-orchestrator-monitor"} == 0
+      for: 1m
+      labels:
+        severity: critical
+      annotations:
+        summary: "API Gout-LLM đã sập!"
+        description: "Pod eval-orchestrator trong namespace gout-eval không thể kết nối trong hơn 1 phút."
+
+    - alert: High_API_Latency
+      expr: histogram_quantile(0.95, sum(rate(http_request_duration_seconds_bucket[5m])) by (le)) > 2
+      for: 2m
+      labels:
+        severity: warning
+      annotations:
+        summary: "API phản hồi chậm (p95 > 2s)"
+        description: "Hệ thống đang bị chậm, vui lòng kiểm tra log của Ollama hoặc Qdrant."

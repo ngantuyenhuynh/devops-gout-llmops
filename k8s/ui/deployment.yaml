@@ -1,0 +1,21 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: gout-ui
+  namespace: gout-eval
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: gout-ui
+  template:
+    metadata:
+      labels:
+        app: gout-ui
+    spec:
+      containers:
+      - name: gout-ui
+        image: asia-southeast1-docker.pkg.dev/nt549-project/gout-llmops-repo/gout-ui:latest
+        imagePullPolicy: Always
+        ports:
+        - containerPort: 8501
