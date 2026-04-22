@@ -36,5 +36,5 @@ spec:
           valueFrom:
             secretKeyRef:
               name: openai-secret
-              key: OPENAI_API_KEY
+              key: api-key
   backoffLimit: 0
