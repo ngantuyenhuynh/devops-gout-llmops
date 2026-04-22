@@ -17,7 +17,8 @@ SUMMARY_PATH = Path(os.getenv("SUMMARY_PATH", "/tmp/summary.json"))
 ORCHESTRATOR_URL = os.getenv("ORCHESTRATOR_URL", "http://eval-orchestrator-service:8000/ask")
 JUDGE_MODEL = os.getenv("JUDGE_MODEL", "gpt-4o-mini")
 EVAL_MODEL_NAME = os.getenv("EVAL_MODEL_NAME", "eval-orchestrator")
-REQUEST_TIMEOUT = int(os.getenv("REQUEST_TIMEOUT", "300"))
+timeout_env = os.getenv("REQUEST_TIMEOUT", "300")
+REQUEST_TIMEOUT = None if timeout_env == "None" else int(timeout_env)
 QUALITY_GATE_FAITHFULNESS_MIN = float(os.getenv("QUALITY_GATE_FAITHFULNESS_MIN", "0.70"))
 QUALITY_GATE_COMPLETENESS_MIN = float(os.getenv("QUALITY_GATE_COMPLETENESS_MIN", "3.0"))
 QUALITY_GATE_RAGAS_FAITHFULNESS_MIN = float(os.getenv("QUALITY_GATE_RAGAS_FAITHFULNESS_MIN", "0.70"))
@@ -64,8 +65,9 @@ def append_jsonl(path: Path, record: dict[str, Any]) -> None:
         f.write(json.dumps(record, ensure_ascii=False) + "\n")
 
 
-def ask_model(question: str) -> dict[str, Any]:
-    response = requests.post(ORCHESTRATOR_URL, json={"question": question}, timeout=REQUEST_TIMEOUT)
+def ask_model(question: str, model_name: str) -> dict[str, Any]:
+    payload = {"question": question, "model_name": model_name}
+    response = requests.post(ORCHESTRATOR_URL, json=payload, timeout=REQUEST_TIMEOUT)
     response.raise_for_status()
     data = response.json()
     if data.get("error"):
@@ -327,7 +329,7 @@ def main() -> None:
 
     for idx, raw in enumerate(tqdm(rows, desc="Evaluating")):
         sample = normalize_sample(raw, idx)
-        result = ask_model(sample["question"])
+        result = ask_model(sample["question"], EVAL_MODEL_NAME)
         contexts = extract_contexts(result)
         answer = str(result.get("answer", "")).strip()
 

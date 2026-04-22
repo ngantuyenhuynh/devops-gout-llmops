@@ -20,6 +20,7 @@ vector_store = QdrantVectorStore(client=client, collection_name=COLLECTION_NAME,
 
 class QuestionRequest(BaseModel):
     question: str
+    model_name: str | None = None
 
 @app.post("/ask")
 def ask_gout_bot(req: QuestionRequest):
@@ -45,7 +46,7 @@ TRẢ LỜI:"""
 
     # 4. GENERATION: Gửi sang Ollama (Đảm bảo bạn nhập đúng tên model đang chạy trong Ollama nhé)
     payload = {
-        "model": "qwen2:1.5b",  # HOẶC vistral, phogpt... tùy model bạn đã pull
+        "model": req.model_name or "qwen2:1.5b",
         "prompt": prompt,
         "stream": False
     }
