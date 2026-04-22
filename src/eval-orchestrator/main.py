@@ -26,7 +26,7 @@ vector_store = QdrantVectorStore(client=client, collection_name=COLLECTION_NAME,
 # 1. CẬP NHẬT Ở ĐÂY: Thêm model_name vào Request
 class QuestionRequest(BaseModel):
     question: str
-    model_name: str = "qwen2:1.5b" # Đặt Qwen làm mặc định nếu không ai truyền vào
+    model_name: str | None = None
 
 # Langfuse theo dõi toàn bộ luồng
 @observe(name="Gout_RAG_Pipeline")
@@ -57,7 +57,7 @@ TRẢ LỜI:"""
 
     # 3. CẬP NHẬT Ở ĐÂY: Truyền biến model_name vào payload của Ollama
     payload = {
-        "model": req.model_name, 
+        "model": req.model_name or "qwen2:1.5b",
         "prompt": prompt,
         "stream": False
     }
