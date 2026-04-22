@@ -18,6 +18,7 @@ JUDGE_PATH = Path(os.getenv("JUDGE_PATH", "/tmp/judge-results.jsonl"))
 SUMMARY_PATH = Path(os.getenv("SUMMARY_PATH", "/tmp/summary.json"))
 ORCHESTRATOR_URL = os.getenv("ORCHESTRATOR_URL", "http://eval-orchestrator-service:8000/ask")
 JUDGE_MODEL = os.getenv("JUDGE_MODEL", "gpt-4o-mini")
+EVAL_MODEL_NAME = os.getenv("EVAL_MODEL_NAME", "eval-orchestrator")
 timeout_env = os.getenv("REQUEST_TIMEOUT", "300")
 REQUEST_TIMEOUT = None if timeout_env == "None" else int(timeout_env)
 QUALITY_GATE_FAITHFULNESS_MIN = float(os.getenv("QUALITY_GATE_FAITHFULNESS_MIN", "0.70"))
@@ -72,32 +73,14 @@ def append_jsonl(path: Path, record: dict[str, Any]) -> None:
         with path.open("a", encoding="utf-8") as f:
             f.write(json.dumps(record, ensure_ascii=False) + "\n")
 
-# CẬP NHẬT: Thêm tham số model_name để gửi lên Orchestrator
 def ask_model(question: str, model_name: str) -> dict[str, Any]:
-    try:
-        # Thay timeout=REQUEST_TIMEOUT thành timeout=None để chờ vô tận
-        response = requests.post(
-            ORCHESTRATOR_URL, 
-            json={"question": question, "model_name": model_name}, 
-            timeout=None 
-        )
-        response.raise_for_status()
-        data = response.json()
-        
-        if data.get("error"):
-            print(f"\nLỗi từ Orchestrator: {data['error']}")
-            return {"answer": "Lỗi sinh text từ Orchestrator", "contexts": []}
-            
-        return data
-        
-    except Exception as e:
-        # Bắt mọi loại lỗi khác (sập mạng, từ chối kết nối...) để Job không bị Crash
-        print(f"\nLỗi kết nối Orchestrator (Bỏ qua câu này): {str(e)}")
-        return {
-            "answer": "Lỗi kết nối", 
-            "contexts": [],
-            "sources": []
-        }
+    payload = {"question": question, "model_name": model_name}
+    response = requests.post(ORCHESTRATOR_URL, json=payload, timeout=REQUEST_TIMEOUT)
+    response.raise_for_status()
+    data = response.json()
+    if data.get("error"):
+        raise RuntimeError(f"Orchestrator returned error for question '{question}': {data['error']}")
+    return data
 
 
 def extract_contexts(result: dict[str, Any]) -> list[str]:
@@ -326,28 +309,48 @@ def main() -> None:
     rows = load_testset(DATA_PATH)
     judge_records: list[dict[str, Any]] = []
 
-    # SỐ LUỒNG CHẠY SONG SONG (NÊN BẰNG VỚI SỐ REPLICA CỦA OLLAMA)
-    MAX_WORKERS = 1
+    for idx, raw in enumerate(tqdm(rows, desc="Evaluating")):
+        sample = normalize_sample(raw, idx)
+        result = ask_model(sample["question"], EVAL_MODEL_NAME)
+        contexts = extract_contexts(result)
+        answer = str(result.get("answer", "")).strip()
 
-    for current_model in MODELS_TO_TEST:
-        print(f"\n🚀 ĐANG LẤY CÂU TRẢ LỜI TỪ MÔ HÌNH: {current_model} (Đa luồng: {MAX_WORKERS})...")
-        
-        # SỬ DỤNG THREADPOOLEXECUTOR ĐỂ CHẠY SONG SONG
-        with ThreadPoolExecutor(max_workers=MAX_WORKERS) as executor:
-            # Gửi tất cả các task vào Pool
-            future_to_sample = {
-                executor.submit(process_single_sample, idx, raw, current_model, client): raw 
-                for idx, raw in enumerate(rows)
-            }
-            
-            # Thu thập kết quả khi các luồng hoàn thành
-            for future in tqdm(as_completed(future_to_sample), total=len(rows), desc=f"Evaluating {current_model}"):
-                try:
-                    record = future.result()
-                    judge_records.append(record)
-                    append_jsonl(JUDGE_PATH, record)
-                except Exception as exc:
-                    print(f"\nLỗi khi xử lý một sample: {exc}")
+        artifact = {
+            "question_id": sample["question_id"],
+            "question": sample["question"],
+            "ground_truth": sample["ground_truth"],
+            "risk_level": sample["risk_level"],
+            "answer": answer,
+            "contexts": contexts,
+            "sources": result.get("sources", []),
+        }
+        append_jsonl(ARTIFACTS_PATH, artifact)
+
+        judge_output = judge_sample(
+            client,
+            question=sample["question"],
+            ground_truth=sample["ground_truth"],
+            answer=answer,
+            contexts=contexts,
+            risk_level=sample["risk_level"],
+        )
+        ragas_output = compute_ragas_metrics(
+            client,
+            question=sample["question"],
+            ground_truth=sample["ground_truth"],
+            answer=answer,
+            contexts=contexts,
+        )
+
+        judge_record = {
+            "question_id": sample["question_id"],
+            "model_name": EVAL_MODEL_NAME,
+            "judge_model": JUDGE_MODEL,
+            "judge_output": judge_output,
+            "ragas_output": ragas_output,
+        }
+        judge_records.append(judge_record)
+        append_jsonl(JUDGE_PATH, judge_record)
 
     summary = aggregate(judge_records)
     SUMMARY_PATH.parent.mkdir(parents=True, exist_ok=True)
