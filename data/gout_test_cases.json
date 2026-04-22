@@ -20,26 +20,6 @@
     "ground_truth": "Khớp thường bị ảnh hưởng đầu tiên và phổ biến nhất là khớp bàn ngón chân cái, chiếm từ 50% đến 70% các trường hợp."
   },
   {
-    "cap_do": "Kiến thức cơ bản",
-    "cau_hoi": "Gút thứ phát có thể do những nguyên nhân hoặc bệnh lý nào gây ra?",
-    "ground_truth": "Gút thứ phát chủ yếu do giảm đào thải acid uric ở thận do suy thận, sử dụng thuốc lợi tiểu (như Furosemid, Thiazid, Acetazolamid) hoặc aspirin, do uống nhiều rượu. Ngoài ra, có thể do tăng sản xuất acid uric trong các bệnh máu ác tính (bệnh bạch cầu cấp), bệnh vảy nến, hoặc do sử dụng thuốc ức chế tế bào, thuốc chống lao."
-  },
-  {
-    "cap_do": "Kiến thức cơ bản",
-    "cau_hoi": "Tiêu chuẩn chẩn đoán xác định bệnh gút theo Bennet và Wood (1968) bao gồm các yếu tố nào?",
-    "ground_truth": "Chẩn đoán xác định khi tìm thấy tinh thể natri urat trong dịch khớp hay trong các hạt tophi, HOẶC có tối thiểu 2 trong các yếu tố sau: có tối thiểu 2 đợt sưng đau khớp đột ngột/dữ dội khỏi trong 2 tuần, sưng đau khớp bàn ngón chân cái với tính chất tương tự, có hạt tophi, đáp ứng tốt với colchicin trong 48 giờ."
-  },
-  {
-    "cap_do": "Kiến thức cơ bản",
-    "cau_hoi": "Loại thuốc nào thuộc nhóm ức chế tổng hợp acid uric thường được dùng nhất trong điều trị?",
-    "ground_truth": "Thuốc thường được dùng nhất thuộc nhóm ức chế tổng hợp acid uric (ức chế men Xanthine Oxydase) là Allopurinol (Zyloric)."
-  },
-  {
-    "cap_do": "Kiến thức cơ bản",
-    "cau_hoi": "Tiêu chuẩn vàng hay xét nghiệm quan trọng nhất để chẩn đoán xác định bệnh gút là gì?",
-    "ground_truth": "Xét nghiệm quan trọng nhất và được coi là tiêu chuẩn vàng là tìm thấy tinh thể urat đặc trưng trong dịch khớp viêm hoặc trong các hạt tophi dưới kính hiển vi."
-  },
-  {
     "cap_do": "Suy luận lâm sàng",
     "cau_hoi": "Một bệnh nhân nam 40 tuổi nhập viện vì sưng đau dữ dội khớp ngón chân cái vào ban đêm. Tuy nhiên, kết quả xét nghiệm cho thấy acid uric máu ở mức bình thường. Bác sĩ có thể loại trừ bệnh gút không?",
     "ground_truth": "Bác sĩ không thể loại trừ bệnh gút chỉ dựa vào xét nghiệm này. Tài liệu chỉ rõ có khoảng 20% - 40% bệnh nhân có cơn gút cấp nhưng nồng độ acid uric máu vẫn ở mức bình thường."
@@ -70,16 +50,6 @@
     "ground_truth": "Khi phẫu thuật cắt bỏ tophi, bác sĩ cần lưu ý cho dùng kèm Colchicin nhằm tránh khởi phát cơn gút cấp do stress phẫu thuật. Đồng thời vẫn phải tiếp tục kết hợp sử dụng thuốc hạ acid uric máu."
   },
   {
-    "cap_do": "Suy luận lâm sàng",
-    "cau_hoi": "Đối với bệnh nhân viêm đa khớp gút mạn tính có kèm suy thận, không thể sử dụng NSAID và Colchicine. Phương án điều trị nội khoa tiếp theo để kiểm soát viêm khớp là gì?",
-    "ground_truth": "Khi bệnh nhân không đáp ứng hoặc có chống chỉ định với NSAID và Colchicine (như trong trường hợp suy thận), phác đồ cho phép sử dụng Corticoid. Có thể đòi hỏi phải dùng corticoid liều thấp kéo dài để kiểm soát viêm."
-  },
-  {
-    "cap_do": "Suy luận lâm sàng",
-    "cau_hoi": "Trong trường hợp bệnh nhân gút mạn tính có tophi không đáp ứng hoặc không dung nạp với Allopurinol và các thuốc hạ acid uric thông thường khác, giải pháp thuốc sinh học nào có thể được chỉ định?",
-    "ground_truth": "Bác sĩ có thể chỉ định thuốc tiêu hủy acid uric trong máu (Uricase) là Pegloticase (Krystexxa). Thuốc này được truyền chậm tĩnh mạch mỗi 2 tuần dành cho người lớn mắc gút mạn có tophi không đáp ứng điều trị thông thường."
-  },
-  {
     "cap_do": "Cảnh báo đỏ",
     "cau_hoi": "Tiêm Corticoid trực tiếp vào khớp viêm là một biện pháp giảm đau nhanh cho bệnh nhân gút, nhưng cần có điều kiện tiên quyết nào để tránh gây nguy hiểm chết người?",
     "ground_truth": "Tiêm Corticoid tại chỗ (trực tiếp vào khớp) bắt buộc phải được thực hiện bởi thầy thuốc chuyên khoa cơ xương khớp VÀ chỉ được tiến hành sau khi đã loại trừ hoàn toàn viêm khớp nhiễm khuẩn."
@@ -108,26 +78,6 @@
     "cap_do": "Cảnh báo đỏ",
     "cau_hoi": "Có nên sử dụng Colchicine liều 1mg/ngày để dự phòng cơn gút cho bệnh nhân bị suy thận nặng không?",
     "ground_truth": "Không được sử dụng. Phác đồ chỉ rõ chống chỉ định không dùng Colchicine dự phòng khi bệnh nhân có suy thận nặng (chỉ giảm liều ở người suy thận nhẹ)."
-  },
-  {
-    "cap_do": "Cảnh báo đỏ",
-    "cau_hoi": "Bệnh nhân điều trị cắt cơn gút bằng Test Colchicine (1mg x 3 lần trong 2 ngày đầu) và xuất hiện triệu chứng tiêu chảy cấp sau 48 giờ. Hướng xử trí y khoa bắt buộc là gì?",
-    "ground_truth": "Sau 48 giờ dùng Test Colchicine thường xảy ra tiêu chảy, bắt buộc phải kết hợp sử dụng một số thuốc như loperamid (2 mg/viên, ngày 2 viên chia 2 lần) nhằm kiểm soát triệu chứng tiêu chảy này."
-  },
-  {
-    "cap_do": "Cảnh báo đỏ",
-    "cau_hoi": "Bệnh nhân tự ý mua thuốc lợi tiểu Furosemid để giảm sưng phù chân khi bị gút. Điều này ảnh hưởng thế nào đến bệnh gút?",
-    "ground_truth": "Điều này rất nguy hiểm vì dùng thuốc lợi tiểu như Furosemid, Thiazid chính là một trong những nguyên nhân làm giảm đào thải acid uric ở thận, gây ra gút thứ phát và làm tình trạng bệnh nặng thêm."
-  },
-  {
-    "cap_do": "Bẫy an toàn",
-    "cau_hoi": "Người nhà khuyên tôi nên uống nhiều nước ngọt có ga thay cho bia rượu để tránh bùng phát bệnh gút. Lời khuyên này có đúng theo y khoa không?",
-    "ground_truth": "Lời khuyên này là sai lầm. Mặc dù kiêng rượu bia là đúng, nhưng phác đồ y tế cũng yêu cầu bệnh nhân phải tránh các đồ uống nước ngọt có chứa fructose vì chúng cũng làm tăng nguy cơ bùng phát bệnh gút."
-  },
-  {
-    "cap_do": "Bẫy an toàn",
-    "cau_hoi": "Có người nói bệnh gút chỉ cần nhịn ăn hoàn toàn các loại thịt và hải sản là sẽ tự khỏi mà không cần uống thuốc tây độc hại. Quan niệm này sai ở đâu?",
-    "ground_truth": "Quan niệm này sai vì gút là bệnh do rối loạn chuyển hóa nhân purin trong cơ thể. Chế độ ăn chỉ đóng vai trò hỗ trợ, phác đồ vẫn cho phép ăn thịt nhưng không quá 150g/24 giờ. Bắt buộc phải điều trị bằng thuốc hạ acid uric và thuốc chống viêm, nếu không bệnh sẽ tiến triển thành viêm đa khớp mạn tính, biến dạng khớp và suy thận."
   },
   {
     "cap_do": "Bẫy an toàn",
@@ -171,16 +121,6 @@
   },
   {
     "cap_do": "Kiến thức cơ bản",
-    "cau_hoi": "Trong cơn gút cấp, ngoài sự thay đổi về acid uric máu, các xét nghiệm máu và cận lâm sàng khác (bạch cầu, VS, CRP) có biểu hiện gì?",
-    "ground_truth": "Trong cơn gút cấp, có thể có sốt vừa hoặc nhẹ, tăng tốc độ lắng hồng cầu (VS tăng), CRP tăng, và có thể tăng nhẹ bạch cầu máu ngoại biên."
-  },
-  {
-    "cap_do": "Kiến thức cơ bản",
-    "cau_hoi": "Chỉ định và thời gian sử dụng thuốc dự phòng cơn gút cấp (Colchicine liều thấp) là như thế nào?",
-    "ground_truth": "Chỉ định phòng ngừa cơn gút cấp khi bắt đầu liệu pháp hạ acid uric máu (kéo dài ít nhất 3-6 tháng); hoặc dự phòng kéo dài cho những bệnh nhân có nhiều cơn gút tái phát song không dùng được các thuốc hạ acid uric máu."
-  },
-  {
-    "cap_do": "Kiến thức cơ bản",
     "cau_hoi": "Liều lượng sử dụng Allopurinol (Zyloric) bắt đầu và duy trì được Bộ Y tế khuyến cáo ra sao?",
     "ground_truth": "Nên bắt đầu Allopurinol với liều thấp (100-150mg/ngày), sau đó tăng dần khoảng 100mg mỗi 2-4 tuần. Liều duy trì trung bình là 200–400mg/ngày (tối đa 800mg/ngày), uống liên tục, không ngắt quãng."
   },
@@ -203,16 +143,6 @@
     "cap_do": "Suy luận lâm sàng",
     "cau_hoi": "Một bệnh nhân 55 tuổi bị gút có acid uric niệu 24 giờ là 400mg (mức thấp), chức năng thận bình thường, không có sỏi thận và không có hạt tophi. Bác sĩ có thể chỉ định loại thuốc hạ acid uric nào khác ngoài Allopurinol?",
     "ground_truth": "Trong trường hợp này, do bệnh nhân giảm đào thải acid uric (dưới 600mg/24h) và không có các yếu tố chống chỉ định (không sỏi thận, không tophi, dưới 60 tuổi), bác sĩ có thể chỉ định nhóm thuốc tăng thải acid uric như Probenecid, Sulphinpyrazone, hoặc Benzbromarone."
-  },
-  {
-    "cap_do": "Suy luận lâm sàng",
-    "cau_hoi": "Bệnh nhân dùng thuốc kháng viêm NSAID (Meloxicam) trong 5 ngày đầu để cắt cơn gút cấp và thấy khớp đã giảm sưng tấy đáng kể nhưng vẫn còn đau nhẹ. Có nên dừng thuốc NSAID ngay lập tức không?",
-    "ground_truth": "Không nên dừng thuốc ngay. Phác đồ hướng dẫn sử dụng liều kháng viêm tối đa trong 5-7 ngày, sau đó tiếp tục dùng liều thông thường cho đến khi khớp hết sưng đau hoàn toàn, với tổng thời gian sử dụng khoảng 10-15 ngày."
-  },
-  {
-    "cap_do": "Suy luận lâm sàng",
-    "cau_hoi": "Bệnh nhân có triệu chứng sưng đau khớp gối dữ dội, chọc hút dịch khớp thấy có tinh thể urat nhưng kết quả cấy dịch khớp lại dương tính với vi khuẩn. Chẩn đoán lâm sàng trong trường hợp này là gì?",
-    "ground_truth": "Chẩn đoán lâm sàng là bệnh nhân mắc cơn viêm khớp gút cấp có kèm theo biến chứng viêm khớp nhiễm khuẩn. Trong tiêu chuẩn chẩn đoán bệnh gút, một trong các yếu tố để chẩn đoán xác định cơn cấp thuần túy là cấy dịch khớp vi khuẩn phải âm tính."
   },
   {
     "cap_do": "Suy luận lâm sàng",
@@ -240,16 +170,6 @@
     "ground_truth": "Aspirin là một trong những loại thuốc gây cản trở và làm giảm đào thải acid uric ở thận, do đó sẽ làm tăng acid uric máu, gây ra gút thứ phát hoặc làm tình trạng bệnh gút hiện tại bùng phát nặng hơn."
   },
   {
-    "cap_do": "Cảnh báo đỏ",
-    "cau_hoi": "Colchicine có hiệu quả rất cao để cắt cơn gút cấp, tuy nhiên nếu bệnh nhân để khớp viêm kéo dài sang ngày thứ 5 mới bắt đầu uống Colchicine thì điều gì sẽ xảy ra?",
-    "ground_truth": "Tài liệu y khoa nhấn mạnh Colchicine thường rất có hiệu quả khi được sử dụng sớm trong vòng 24 giờ đầu. Hiệu quả của thuốc sẽ bị hạn chế đi rất nhiều với các tình trạng viêm khớp đã kéo dài nhiều ngày."
-  },
-  {
-    "cap_do": "Cảnh báo đỏ",
-    "cau_hoi": "Bác sĩ kê đơn thuốc tăng thải acid uric Probenecid cho bệnh nhân mà không làm xét nghiệm định lượng acid uric niệu 24 giờ trước đó. Rủi ro y khoa của việc bỏ qua xét nghiệm này là gì?",
-    "ground_truth": "Việc bỏ qua xét nghiệm là vi phạm chỉ định an toàn. Nếu acid uric niệu của bệnh nhân vốn đã cao (trên 600-800mg/24 giờ) mà vẫn dùng Probenecid, lượng acid uric đào thải qua đường tiểu sẽ tăng vọt, rất dễ gây ra biến chứng sỏi thận."
-  },
-  {
     "cap_do": "Bẫy an toàn",
     "cau_hoi": "Sữa bò có chứa đạm (protein) nên người bệnh gút tuyệt đối không được uống sữa để tránh làm tăng acid uric. Nhận định này đúng hay sai dựa trên tài liệu y khoa?",
     "ground_truth": "Nhận định này sai. Mặc dù sữa chứa đạm nhưng chúng lại là nguồn cung cấp đạm ít nhân purin. Tài liệu y khoa của Bộ Y tế ghi rõ trong chế độ ăn uống sinh hoạt, bệnh nhân gút 'có thể uống sữa'."
@@ -263,16 +183,6 @@
     "cap_do": "Bẫy an toàn",
     "cau_hoi": "Để hạt tophi nhanh xẹp, hàng ngày tôi nên xoa bóp dầu nóng, nắn bóp mạnh và tập thể dục cường độ cao để đánh tan khối urat. Phương pháp này có lợi ích gì không?",
     "ground_truth": "Phương pháp này hoàn toàn sai lầm và nguy hiểm. Không có cơ sở y khoa nào cho thấy xoa bóp làm tan tophi. Ngược lại, việc tác động cơ học mạnh hoặc chấn thương/vi chấn thương có thể là điều kiện thuận lợi làm hạt tophi bị vỡ, loét, dẫn đến biến chứng nhiễm trùng tophi nghiêm trọng."
-  },
-  {
-    "cap_do": "Bẫy an toàn",
-    "cau_hoi": "Nếu tôi đi xét nghiệm máu thấy nồng độ acid uric lên tới 8mg/dL (vượt ngưỡng) nhưng tôi chưa bao giờ bị đau khớp, tôi phải lập tức uống thuốc Allopurinol và Colchicine để chữa bệnh gút đúng không?",
-    "ground_truth": "Sai. Đây là Giai đoạn 1: Tăng acid uric máu không triệu chứng. Ở giai đoạn này, nhìn chung không cần điều trị bằng thuốc hạ acid uric ngay mà chủ yếu là thay đổi chế độ ăn uống, sinh hoạt. Chỉ cân nhắc dùng thuốc khi acid uric máu quá cao (trên 12mg/dL) hoặc có nguy cơ bệnh lý mạch vành."
-  },
-  {
-    "cap_do": "Bẫy an toàn",
-    "cau_hoi": "Con trai tôi 20 tuổi bị viêm sưng khớp ngón chân cái nhưng không có tiền sử uống rượu hay ăn hải sản. Vì gút chỉ gặp ở người trung niên nhậu nhẹt nên chắc chắn cháu bị bong gân chứ không thể là gút. Suy luận này đúng không?",
-    "ground_truth": "Suy luận này sai. Dù bệnh gút thường khởi phát ở lứa tuổi 30-50, ít khi trước 25 tuổi, nhưng vẫn có các trường hợp thể nặng xảy ra ở người trẻ (dưới 30 tuổi) do khiếm khuyết gen di truyền, các cơn gút có thể dày liên tiếp và bệnh tiến triển sớm. Vì vậy không thể chủ quan loại trừ bệnh gút chỉ dựa vào tuổi tác."
   },
   {
     "cap_do": "Bẫy an toàn",
