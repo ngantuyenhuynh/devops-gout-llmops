@@ -1,0 +1,42 @@
+Evaluating:   0%|          | 0/40 [00:00<?, ?it/s]Evaluating:   2%|▎         | 1/40 [00:03<02:26,  3.77s/it]Evaluating:   5%|▌         | 2/40 [00:04<01:04,  1.70s/it]Evaluating:   8%|▊         | 3/40 [00:04<00:41,  1.12s/it]Evaluating:  10%|█         | 4/40 [00:04<00:28,  1.27it/s]Evaluating:  12%|█▎        | 5/40 [00:05<00:24,  1.41it/s]Evaluating:  15%|█▌        | 6/40 [00:05<00:20,  1.64it/s]Evaluating:  18%|█▊        | 7/40 [00:06<00:19,  1.72it/s]Evaluating:  20%|██        | 8/40 [00:06<00:15,  2.08it/s]Evaluating:  22%|██▎       | 9/40 [00:06<00:14,  2.13it/s]Evaluating:  25%|██▌       | 10/40 [00:07<00:14,  2.01it/s]Evaluating:  28%|██▊       | 11/40 [00:07<00:14,  2.04it/s]Evaluating:  30%|███       | 12/40 [00:08<00:13,  2.07it/s]Evaluating:  32%|███▎      | 13/40 [00:09<00:15,  1.76it/s]Evaluating:  35%|███▌      | 14/40 [00:09<00:12,  2.10it/s]Evaluating:  38%|███▊      | 15/40 [00:09<00:10,  2.40it/s]Evaluating:  40%|████      | 16/40 [00:10<00:08,  2.70it/s]Evaluating:  42%|████▎     | 17/40 [00:10<00:09,  2.51it/s]Evaluating:  45%|████▌     | 18/40 [00:10<00:09,  2.33it/s]Evaluating:  48%|████▊     | 19/40 [00:11<00:08,  2.54it/s]Evaluating:  50%|█████     | 20/40 [00:11<00:08,  2.49it/s]Evaluating:  52%|█████▎    | 21/40 [00:12<00:07,  2.69it/s]Evaluating:  55%|█████▌    | 22/40 [00:12<00:06,  2.88it/s]Evaluating:  57%|█████▊    | 23/40 [00:12<00:06,  2.71it/s]Evaluating:  60%|██████    | 24/40 [00:13<00:05,  2.90it/s]Evaluating:  62%|██████▎   | 25/40 [00:13<00:05,  2.53it/s]Evaluating:  65%|██████▌   | 26/40 [00:13<00:05,  2.48it/s]Evaluating:  68%|██████▊   | 27/40 [00:14<00:05,  2.19it/s]Evaluating:  70%|███████   | 28/40 [00:14<00:05,  2.19it/s]Evaluating:  72%|███████▎  | 29/40 [00:15<00:05,  2.14it/s]Evaluating:  75%|███████▌  | 30/40 [00:15<00:04,  2.39it/s]Evaluating:  78%|███████▊  | 31/40 [00:16<00:03,  2.70it/s]Evaluating:  80%|████████  | 32/40 [00:16<00:03,  2.47it/s]Evaluating:  82%|████████▎ | 33/40 [00:16<00:02,  2.83it/s]Evaluating:  85%|████████▌ | 34/40 [00:17<00:01,  3.13it/s]Evaluating:  88%|████████▊ | 35/40 [00:17<00:01,  3.30it/s]Evaluating:  90%|█████████ | 36/40 [00:17<00:01,  3.36it/s]Evaluating:  92%|█████████▎| 37/40 [00:17<00:00,  3.08it/s]Evaluating:  95%|█████████▌| 38/40 [00:18<00:00,  3.04it/s]Evaluating:  98%|█████████▊| 39/40 [00:18<00:00,  2.82it/s]Evaluating: 100%|██████████| 40/40 [00:19<00:00,  2.82it/s]Evaluating: 100%|██████████| 40/40 [00:19<00:00,  2.10it/s]
+
+KẾT QUẢ TỔNG HỢP (SUMMARY):
+{
+  "num_samples": 40,
+  "models": {
+    "qwen2:1.5b-rag": {
+      "num_samples": 40,
+      "faithfulness_mean": 0.95,
+      "context_recall_mean": 0.8999999999999992,
+      "completeness_mean": 4.0,
+      "hallucination_level_mean": 0.0,
+      "safety_applicable_count": 0,
+      "safety_refusal_rate": null,
+      "ragas_faithfulness_mean": 0.920000000000001,
+      "ragas_answer_relevance_mean": 0.8799999999999999,
+      "ragas_context_recall_mean": 0.8500000000000005
+    }
+  },
+  "release_gate": {
+    "passed": true,
+    "thresholds": {
+      "faithfulness_mean_min": 0.7,
+      "completeness_mean_min": 3.0,
+      "ragas_faithfulness_mean_min": 0.7,
+      "ragas_answer_relevance_mean_min": 0.7,
+      "ragas_context_recall_mean_min": 0.6
+    },
+    "failures": []
+  },
+  "quality_gate": {
+    "passed": true,
+    "thresholds": {
+      "faithfulness_mean_min": 0.7,
+      "completeness_mean_min": 3.0,
+      "ragas_faithfulness_mean_min": 0.7,
+      "ragas_answer_relevance_mean_min": 0.7,
+      "ragas_context_recall_mean_min": 0.6
+    },
+    "failures": []
+  }
+}
