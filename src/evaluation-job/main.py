@@ -31,7 +31,6 @@ QUALITY_GATE_RAGAS_CONTEXT_RECALL_MIN = float(os.getenv("QUALITY_GATE_RAGAS_CONT
 MODELS_TO_TEST = [
     os.getenv("EVAL_MODEL_NAME", "qwen2:1.5b")
 ]
-    "qwen2:1.5b"]
 
 def load_testset(path: Path) -> list[dict[str, Any]]:
     try:
