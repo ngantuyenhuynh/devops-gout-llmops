@@ -63,10 +63,16 @@ TRẢ LỜI:"""
     }
 
     try:
-        response = requests.post(OLLAMA_URL, json=payload)
+        response = requests.post(OLLAMA_URL, json=payload, timeout=300)
+        response.raise_for_status()
         response_data = response.json()
-        
-        answer = response_data.get("response", "Lỗi sinh text từ LLM")
+
+        if response_data.get("error"):
+            return {"error": f"Ollama error: {response_data['error']}"}
+
+        answer = str(response_data.get("response", "")).strip()
+        if not answer:
+            return {"error": f"Ollama returned no response: {response_data}"}
         
         # Lưu kết quả trả về vào Langfuse Trace
         langfuse_context.update_current_trace(output=answer)
