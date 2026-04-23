@@ -1,20 +1,20 @@
-Evaluating:   0%|          | 0/40 [00:00<?, ?it/s]Evaluating:   2%|▎         | 1/40 [00:03<02:23,  3.68s/it]Evaluating:   5%|▌         | 2/40 [00:04<01:06,  1.74s/it]Evaluating:   8%|▊         | 3/40 [00:04<00:40,  1.08s/it]Evaluating:  10%|█         | 4/40 [00:04<00:30,  1.20it/s]Evaluating:  12%|█▎        | 5/40 [00:05<00:24,  1.42it/s]Evaluating:  15%|█▌        | 6/40 [00:06<00:25,  1.35it/s]Evaluating:  18%|█▊        | 7/40 [00:06<00:21,  1.54it/s]Evaluating:  20%|██        | 8/40 [00:07<00:19,  1.67it/s]Evaluating:  22%|██▎       | 9/40 [00:07<00:20,  1.50it/s]Evaluating:  25%|██▌       | 10/40 [00:08<00:18,  1.58it/s]Evaluating:  28%|██▊       | 11/40 [00:08<00:16,  1.81it/s]Evaluating:  30%|███       | 12/40 [00:09<00:13,  2.12it/s]Evaluating:  32%|███▎      | 13/40 [00:09<00:15,  1.76it/s]Evaluating:  35%|███▌      | 14/40 [00:10<00:15,  1.69it/s]Evaluating:  38%|███▊      | 15/40 [00:11<00:14,  1.73it/s]Evaluating:  40%|████      | 16/40 [00:11<00:11,  2.08it/s]Evaluating:  42%|████▎     | 17/40 [00:11<00:10,  2.14it/s]Evaluating:  45%|████▌     | 18/40 [00:12<00:11,  1.97it/s]Evaluating:  48%|████▊     | 19/40 [00:12<00:10,  2.03it/s]Evaluating:  50%|█████     | 20/40 [00:13<00:09,  2.02it/s]Evaluating:  52%|█████▎    | 21/40 [00:13<00:09,  2.05it/s]Evaluating:  55%|█████▌    | 22/40 [00:14<00:07,  2.37it/s]Evaluating:  57%|█████▊    | 23/40 [00:14<00:06,  2.77it/s]Evaluating:  62%|██████▎   | 25/40 [00:15<00:07,  2.07it/s]Evaluating:  65%|██████▌   | 26/40 [00:16<00:08,  1.65it/s]Evaluating:  68%|██████▊   | 27/40 [00:16<00:06,  1.91it/s]Evaluating:  70%|███████   | 28/40 [00:17<00:06,  1.97it/s]Evaluating:  72%|███████▎  | 29/40 [00:17<00:05,  1.92it/s]Evaluating:  75%|███████▌  | 30/40 [00:18<00:04,  2.18it/s]Evaluating:  78%|███████▊  | 31/40 [00:18<00:04,  2.12it/s]Evaluating:  80%|████████  | 32/40 [00:19<00:04,  1.86it/s]Evaluating:  82%|████████▎ | 33/40 [00:20<00:04,  1.71it/s]Evaluating:  85%|████████▌ | 34/40 [00:20<00:03,  1.99it/s]Evaluating:  88%|████████▊ | 35/40 [00:20<00:02,  2.03it/s]Evaluating:  90%|█████████ | 36/40 [00:21<00:02,  1.96it/s]Evaluating:  92%|█████████▎| 37/40 [00:21<00:01,  2.00it/s]Evaluating:  95%|█████████▌| 38/40 [00:22<00:00,  2.04it/s]Evaluating:  98%|█████████▊| 39/40 [00:22<00:00,  2.26it/s]Evaluating: 100%|██████████| 40/40 [00:23<00:00,  1.98it/s]Evaluating: 100%|██████████| 40/40 [00:23<00:00,  1.72it/s]
+Evaluating:   0%|          | 0/40 [00:00<?, ?it/s]Evaluating:   2%|▎         | 1/40 [00:15<10:23, 15.98s/it]Evaluating:   5%|▌         | 2/40 [00:25<07:39, 12.10s/it]Evaluating:   8%|▊         | 3/40 [00:33<06:14, 10.12s/it]Evaluating:  10%|█         | 4/40 [00:44<06:28, 10.78s/it]Evaluating:  12%|█▎        | 5/40 [00:52<05:40,  9.71s/it]Evaluating:  15%|█▌        | 6/40 [01:01<05:20,  9.43s/it]Evaluating:  18%|█▊        | 7/40 [01:11<05:16,  9.58s/it]Evaluating:  20%|██        | 8/40 [01:20<04:56,  9.26s/it]Evaluating:  22%|██▎       | 9/40 [01:32<05:19, 10.32s/it]Evaluating:  25%|██▌       | 10/40 [01:40<04:46,  9.57s/it]Evaluating:  28%|██▊       | 11/40 [01:50<04:39,  9.64s/it]Evaluating:  30%|███       | 12/40 [02:01<04:39,  9.98s/it]Evaluating:  32%|███▎      | 13/40 [02:08<04:10,  9.28s/it]Evaluating:  35%|███▌      | 14/40 [02:17<03:59,  9.21s/it]Evaluating:  38%|███▊      | 15/40 [02:24<03:31,  8.44s/it]Evaluating:  40%|████      | 16/40 [02:35<03:37,  9.08s/it]Evaluating:  42%|████▎     | 17/40 [02:43<03:21,  8.77s/it]Evaluating:  45%|████▌     | 18/40 [02:52<03:16,  8.93s/it]Evaluating:  48%|████▊     | 19/40 [03:02<03:13,  9.21s/it]Evaluating:  50%|█████     | 20/40 [03:10<03:00,  9.00s/it]Evaluating:  52%|█████▎    | 21/40 [03:21<03:01,  9.54s/it]Evaluating:  55%|█████▌    | 22/40 [03:29<02:40,  8.90s/it]Evaluating:  57%|█████▊    | 23/40 [03:36<02:22,  8.38s/it]Evaluating:  60%|██████    | 24/40 [03:44<02:12,  8.30s/it]Evaluating:  62%|██████▎   | 25/40 [03:52<02:04,  8.32s/it]Evaluating:  65%|██████▌   | 26/40 [03:59<01:50,  7.93s/it]Evaluating:  68%|██████▊   | 27/40 [04:06<01:40,  7.71s/it]Evaluating:  70%|███████   | 28/40 [04:13<01:29,  7.45s/it]Evaluating:  72%|███████▎  | 29/40 [04:21<01:21,  7.45s/it]Evaluating:  75%|███████▌  | 30/40 [04:36<01:38,  9.80s/it]Evaluating:  78%|███████▊  | 31/40 [04:45<01:24,  9.43s/it]Evaluating:  80%|████████  | 32/40 [04:54<01:14,  9.36s/it]Evaluating:  82%|████████▎ | 33/40 [05:02<01:02,  8.95s/it]Evaluating:  85%|████████▌ | 34/40 [05:10<00:52,  8.80s/it]Evaluating:  88%|████████▊ | 35/40 [05:18<00:42,  8.47s/it]Evaluating:  90%|█████████ | 36/40 [05:26<00:33,  8.44s/it]Evaluating:  92%|█████████▎| 37/40 [05:34<00:24,  8.28s/it]Evaluating:  95%|█████████▌| 38/40 [05:44<00:17,  8.80s/it]Evaluating:  98%|█████████▊| 39/40 [05:51<00:08,  8.29s/it]Evaluating: 100%|██████████| 40/40 [05:59<00:00,  8.22s/it]Evaluating: 100%|██████████| 40/40 [05:59<00:00,  9.00s/it]
 
 KẾT QUẢ TỔNG HỢP (SUMMARY):
 {
   "num_samples": 40,
   "models": {
-    "qwen2:1.5b-rag": {
+    "vinallama": {
       "num_samples": 40,
-      "faithfulness_mean": 0.95,
-      "context_recall_mean": 0.8999999999999992,
-      "completeness_mean": 4.0,
-      "hallucination_level_mean": 0.0,
-      "safety_applicable_count": 0,
-      "safety_refusal_rate": null,
-      "ragas_faithfulness_mean": 0.920000000000001,
-      "ragas_answer_relevance_mean": 0.8799999999999999,
-      "ragas_context_recall_mean": 0.8500000000000005
+      "faithfulness_mean": 0.9974999999999999,
+      "context_recall_mean": 1.0,
+      "completeness_mean": 3.975,
+      "hallucination_level_mean": 0.05,
+      "safety_applicable_count": 9,
+      "safety_refusal_rate": 1.0,
+      "ragas_faithfulness_mean": 1.0,
+      "ragas_answer_relevance_mean": 1.0,
+      "ragas_context_recall_mean": 1.0
     }
   },
   "release_gate": {
