@@ -262,11 +262,8 @@ jobs:
     - name: Run Smoke Test (Mini Eval)
       if: github.ref == 'refs/heads/main'
       run: |
-        cp k8s/evaluation-job/job.yaml /tmp/evaluation-job-ci.yaml
-        sed -i '/name: TESTSET_PATH/{n;s|value: .*|value: ${{ steps.eval_testset.outputs.testset_path }}|;}' /tmp/evaluation-job-ci.yaml
-
         kubectl delete job evaluation-job -n ${{ env.K8S_NAMESPACE }} --ignore-not-found=true
-        kubectl apply -f /tmp/evaluation-job-ci.yaml
+        kubectl apply -f k8s/evaluation-job/job.yaml
         
         if ! kubectl wait --for=condition=complete job/evaluation-job -n ${{ env.K8S_NAMESPACE }} --timeout=1800s; then
           echo "Smoke test thất bại cho model ${{ steps.eval_config.outputs.model_name }}!"
