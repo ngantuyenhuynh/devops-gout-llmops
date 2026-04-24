@@ -1,42 +1,10 @@
-Evaluating:   0%|          | 0/40 [00:00<?, ?it/s]Evaluating:   2%|▎         | 1/40 [00:15<10:23, 15.98s/it]Evaluating:   5%|▌         | 2/40 [00:25<07:39, 12.10s/it]Evaluating:   8%|▊         | 3/40 [00:33<06:14, 10.12s/it]Evaluating:  10%|█         | 4/40 [00:44<06:28, 10.78s/it]Evaluating:  12%|█▎        | 5/40 [00:52<05:40,  9.71s/it]Evaluating:  15%|█▌        | 6/40 [01:01<05:20,  9.43s/it]Evaluating:  18%|█▊        | 7/40 [01:11<05:16,  9.58s/it]Evaluating:  20%|██        | 8/40 [01:20<04:56,  9.26s/it]Evaluating:  22%|██▎       | 9/40 [01:32<05:19, 10.32s/it]Evaluating:  25%|██▌       | 10/40 [01:40<04:46,  9.57s/it]Evaluating:  28%|██▊       | 11/40 [01:50<04:39,  9.64s/it]Evaluating:  30%|███       | 12/40 [02:01<04:39,  9.98s/it]Evaluating:  32%|███▎      | 13/40 [02:08<04:10,  9.28s/it]Evaluating:  35%|███▌      | 14/40 [02:17<03:59,  9.21s/it]Evaluating:  38%|███▊      | 15/40 [02:24<03:31,  8.44s/it]Evaluating:  40%|████      | 16/40 [02:35<03:37,  9.08s/it]Evaluating:  42%|████▎     | 17/40 [02:43<03:21,  8.77s/it]Evaluating:  45%|████▌     | 18/40 [02:52<03:16,  8.93s/it]Evaluating:  48%|████▊     | 19/40 [03:02<03:13,  9.21s/it]Evaluating:  50%|█████     | 20/40 [03:10<03:00,  9.00s/it]Evaluating:  52%|█████▎    | 21/40 [03:21<03:01,  9.54s/it]Evaluating:  55%|█████▌    | 22/40 [03:29<02:40,  8.90s/it]Evaluating:  57%|█████▊    | 23/40 [03:36<02:22,  8.38s/it]Evaluating:  60%|██████    | 24/40 [03:44<02:12,  8.30s/it]Evaluating:  62%|██████▎   | 25/40 [03:52<02:04,  8.32s/it]Evaluating:  65%|██████▌   | 26/40 [03:59<01:50,  7.93s/it]Evaluating:  68%|██████▊   | 27/40 [04:06<01:40,  7.71s/it]Evaluating:  70%|███████   | 28/40 [04:13<01:29,  7.45s/it]Evaluating:  72%|███████▎  | 29/40 [04:21<01:21,  7.45s/it]Evaluating:  75%|███████▌  | 30/40 [04:36<01:38,  9.80s/it]Evaluating:  78%|███████▊  | 31/40 [04:45<01:24,  9.43s/it]Evaluating:  80%|████████  | 32/40 [04:54<01:14,  9.36s/it]Evaluating:  82%|████████▎ | 33/40 [05:02<01:02,  8.95s/it]Evaluating:  85%|████████▌ | 34/40 [05:10<00:52,  8.80s/it]Evaluating:  88%|████████▊ | 35/40 [05:18<00:42,  8.47s/it]Evaluating:  90%|█████████ | 36/40 [05:26<00:33,  8.44s/it]Evaluating:  92%|█████████▎| 37/40 [05:34<00:24,  8.28s/it]Evaluating:  95%|█████████▌| 38/40 [05:44<00:17,  8.80s/it]Evaluating:  98%|█████████▊| 39/40 [05:51<00:08,  8.29s/it]Evaluating: 100%|██████████| 40/40 [05:59<00:00,  8.22s/it]Evaluating: 100%|██████████| 40/40 [05:59<00:00,  9.00s/it]
-
-KẾT QUẢ TỔNG HỢP (SUMMARY):
-{
-  "num_samples": 40,
-  "models": {
-    "vinallama": {
-      "num_samples": 40,
-      "faithfulness_mean": 0.9974999999999999,
-      "context_recall_mean": 1.0,
-      "completeness_mean": 3.975,
-      "hallucination_level_mean": 0.05,
-      "safety_applicable_count": 9,
-      "safety_refusal_rate": 1.0,
-      "ragas_faithfulness_mean": 1.0,
-      "ragas_answer_relevance_mean": 1.0,
-      "ragas_context_recall_mean": 1.0
-    }
-  },
-  "release_gate": {
-    "passed": true,
-    "thresholds": {
-      "faithfulness_mean_min": 0.7,
-      "completeness_mean_min": 3.0,
-      "ragas_faithfulness_mean_min": 0.7,
-      "ragas_answer_relevance_mean_min": 0.7,
-      "ragas_context_recall_mean_min": 0.6
-    },
-    "failures": []
-  },
-  "quality_gate": {
-    "passed": true,
-    "thresholds": {
-      "faithfulness_mean_min": 0.7,
-      "completeness_mean_min": 3.0,
-      "ragas_faithfulness_mean_min": 0.7,
-      "ragas_answer_relevance_mean_min": 0.7,
-      "ragas_context_recall_mean_min": 0.6
-    },
-    "failures": []
-  }
-}
+Evaluating:   0%|          | 0/32 [00:00<?, ?it/s]Evaluating:   0%|          | 0/32 [00:01<?, ?it/s]
+Traceback (most recent call last):
+  File "/app/main.py", line 421, in <module>
+    main()
+  File "/app/main.py", line 370, in main
+    result = ask_model(sample["question"], EVAL_MODEL_NAME)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/app/main.py", line 82, in ask_model
+    raise RuntimeError(f"Orchestrator returned error for question '{question}': {data['error']}")
+RuntimeError: Orchestrator returned error for question 'Giai đoạn 1 của bệnh gút trên lâm sàng được gọi là gì và đặc điểm của nó?': Lỗi khi gọi Ollama: 500 Server Error: Internal Server Error for url: http://ollama-service:11434/api/generate

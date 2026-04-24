@@ -1,0 +1,53 @@
+Evaluating:   0%|          | 0/32 [00:00<?, ?it/s]Evaluating:   3%|▎         | 1/32 [01:04<33:11, 64.26s/it]Evaluating:   6%|▋         | 2/32 [02:06<31:40, 63.35s/it]Evaluating:   9%|▉         | 3/32 [03:21<33:03, 68.39s/it]Evaluating:  12%|█▎        | 4/32 [04:12<28:47, 61.70s/it]Evaluating:  16%|█▌        | 5/32 [04:51<23:59, 53.32s/it]Evaluating:  19%|█▉        | 6/32 [05:24<20:07, 46.43s/it]Evaluating:  22%|██▏       | 7/32 [05:58<17:38, 42.35s/it]Evaluating:  25%|██▌       | 8/32 [06:28<15:25, 38.55s/it]Evaluating:  28%|██▊       | 9/32 [07:22<16:32, 43.17s/it]Evaluating:  31%|███▏      | 10/32 [08:14<16:50, 45.93s/it]Evaluating:  34%|███▍      | 11/32 [08:55<15:36, 44.61s/it]Evaluating:  38%|███▊      | 12/32 [09:37<14:37, 43.85s/it]Evaluating:  41%|████      | 13/32 [10:25<14:16, 45.08s/it]Evaluating:  44%|████▍     | 14/32 [11:03<12:53, 43.00s/it]Evaluating:  47%|████▋     | 15/32 [11:40<11:36, 41.00s/it]Evaluating:  50%|█████     | 16/32 [12:29<11:35, 43.45s/it]Evaluating:  53%|█████▎    | 17/32 [13:40<12:55, 51.71s/it]Evaluating:  56%|█████▋    | 18/32 [14:25<11:37, 49.84s/it]Evaluating:  59%|█████▉    | 19/32 [15:56<13:27, 62.14s/it]Evaluating:  62%|██████▎   | 20/32 [16:43<11:30, 57.53s/it]Evaluating:  66%|██████▌   | 21/32 [17:40<10:29, 57.25s/it]Evaluating:  69%|██████▉   | 22/32 [18:27<09:02, 54.29s/it]Evaluating:  72%|███████▏  | 23/32 [19:26<08:21, 55.74s/it]Evaluating:  75%|███████▌  | 24/32 [20:11<06:59, 52.42s/it]Evaluating:  78%|███████▊  | 25/32 [20:47<05:33, 47.70s/it]Evaluating:  81%|████████▏ | 26/32 [21:33<04:41, 46.93s/it]Evaluating:  84%|████████▍ | 27/32 [22:05<03:32, 42.55s/it]Evaluating:  88%|████████▊ | 28/32 [22:42<02:43, 40.89s/it]Evaluating:  91%|█████████ | 29/32 [23:48<02:25, 48.49s/it]Evaluating:  94%|█████████▍| 30/32 [24:35<01:35, 47.97s/it]Evaluating:  97%|█████████▋| 31/32 [25:11<00:44, 44.40s/it]Evaluating: 100%|██████████| 32/32 [26:10<00:00, 48.92s/it]Evaluating: 100%|██████████| 32/32 [26:10<00:00, 49.09s/it]
+
+KẾT QUẢ TỔNG HỢP (SUMMARY):
+{
+  "num_samples": 32,
+  "models": {
+    "qwen2:1.5b": {
+      "num_samples": 32,
+      "faithfulness_mean": 0.49687500000000007,
+      "context_recall_mean": 0.8875000000000001,
+      "completeness_mean": 1.75,
+      "hallucination_level_mean": 1.90625,
+      "safety_applicable_count": 10,
+      "safety_refusal_rate": 0.25,
+      "ragas_faithfulness_mean": 0.384375,
+      "ragas_answer_relevance_mean": 0.41093750000000007,
+      "ragas_context_recall_mean": 0.9093749999999999
+    }
+  },
+  "release_gate": {
+    "passed": false,
+    "thresholds": {
+      "faithfulness_mean_min": 0.7,
+      "completeness_mean_min": 3.0,
+      "ragas_faithfulness_mean_min": 0.7,
+      "ragas_answer_relevance_mean_min": 0.7,
+      "ragas_context_recall_mean_min": 0.6
+    },
+    "failures": [
+      "qwen2:1.5b: faithfulness_mean below threshold",
+      "qwen2:1.5b: completeness_mean below threshold",
+      "qwen2:1.5b: ragas_faithfulness_mean below threshold",
+      "qwen2:1.5b: ragas_answer_relevance_mean below threshold"
+    ]
+  },
+  "quality_gate": {
+    "passed": false,
+    "thresholds": {
+      "faithfulness_mean_min": 0.7,
+      "completeness_mean_min": 3.0,
+      "ragas_faithfulness_mean_min": 0.7,
+      "ragas_answer_relevance_mean_min": 0.7,
+      "ragas_context_recall_mean_min": 0.6
+    },
+    "failures": [
+      "qwen2:1.5b: faithfulness_mean below threshold",
+      "qwen2:1.5b: completeness_mean below threshold",
+      "qwen2:1.5b: ragas_faithfulness_mean below threshold",
+      "qwen2:1.5b: ragas_answer_relevance_mean below threshold"
+    ]
+  }
+Release gate failed: qwen2:1.5b: faithfulness_mean below threshold; qwen2:1.5b: completeness_mean below threshold; qwen2:1.5b: ragas_faithfulness_mean below threshold; qwen2:1.5b: ragas_answer_relevance_mean below threshold
+}
