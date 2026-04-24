@@ -221,15 +221,43 @@ jobs:
       if: github.ref == 'refs/heads/main'
       run: kubectl rollout status deployment/eval-orchestrator -n ${{ env.K8S_NAMESPACE }} --timeout=300s
 
+    - name: Extract Evaluation Config
+      if: github.ref == 'refs/heads/main'
+      id: eval_config
+      run: |
+        MODEL_NAME=$(awk '/name: EVAL_MODEL_NAME/{getline; sub(/^[[:space:]]*value:[[:space:]]*/, "", $0); print; exit}' k8s/evaluation-job/job.yaml)
+        if [ -z "$MODEL_NAME" ]; then
+          echo "Không tìm thấy EVAL_MODEL_NAME trong k8s/evaluation-job/job.yaml"
+          exit 1
+        fi
+        echo "model_name=$MODEL_NAME" >> "$GITHUB_OUTPUT"
+        echo "Đánh giá model: $MODEL_NAME"
+
+    - name: Wait for Ollama rollout
+      if: github.ref == 'refs/heads/main'
+      run: kubectl rollout status deployment/ollama-worker -n ${{ env.K8S_NAMESPACE }} --timeout=600s
+
+    - name: Pull Evaluation Model in Ollama
+      if: github.ref == 'refs/heads/main'
+      run: |
+        echo "Đang tải model ${{ steps.eval_config.outputs.model_name }} vào Ollama..."
+        kubectl exec -n ${{ env.K8S_NAMESPACE }} deployment/ollama-worker -- ollama pull "${{ steps.eval_config.outputs.model_name }}"
+
     - name: Run Smoke Test (Mini Eval)
       if: github.ref == 'refs/heads/main'
       run: |
+        cp k8s/evaluation-job/job.yaml /tmp/evaluation-job-ci.yaml
+        sed -i '/name: TESTSET_PATH/{n;s|value: .*|value: /app/data/gout_test_cases_mini.json|;}' /tmp/evaluation-job-ci.yaml
+
         kubectl delete job evaluation-job -n ${{ env.K8S_NAMESPACE }} --ignore-not-found=true
-        kubectl apply -f k8s/evaluation-job/job.yaml
+        kubectl apply -f /tmp/evaluation-job-ci.yaml
         
         if ! kubectl wait --for=condition=complete job/evaluation-job -n ${{ env.K8S_NAMESPACE }} --timeout=1800s; then
-          echo "Smoke test thất bại!"
+          echo "Smoke test thất bại cho model ${{ steps.eval_config.outputs.model_name }}!"
           kubectl logs job/evaluation-job -n ${{ env.K8S_NAMESPACE }} || true
+          kubectl describe job evaluation-job -n ${{ env.K8S_NAMESPACE }} || true
+          kubectl get pods -n ${{ env.K8S_NAMESPACE }} -l job-name=evaluation-job -o wide || true
           exit 1
         fi
-        echo "Smoke test thành công!"
+        echo "Smoke test thành công cho model ${{ steps.eval_config.outputs.model_name }}!"
+        kubectl logs job/evaluation-job -n ${{ env.K8S_NAMESPACE }} || true
