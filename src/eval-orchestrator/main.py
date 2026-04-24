@@ -63,7 +63,7 @@ TRẢ LỜI:"""
     }
 
     try:
-        response = requests.post(OLLAMA_URL, json=payload, timeout=300)
+        response = requests.post(OLLAMA_URL, json=payload, timeout=900)
         response.raise_for_status()
         response_data = response.json()
 
