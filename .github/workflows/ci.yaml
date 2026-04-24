@@ -233,6 +233,22 @@ jobs:
         echo "model_name=$MODEL_NAME" >> "$GITHUB_OUTPUT"
         echo "Đánh giá model: $MODEL_NAME"
 
+    - name: Detect Evaluation Testset
+      if: github.ref == 'refs/heads/main'
+      id: eval_testset
+      run: |
+        CHANGED_TESTSET=$(git diff --name-only "${{ github.event.before }}" "${{ github.sha }}" | grep -E '^data/gout_test_cases(_mini)?\.json(l)?$' | head -n 1 || true)
+
+        if [ -n "$CHANGED_TESTSET" ]; then
+          TESTSET_PATH="/app/${CHANGED_TESTSET}"
+          echo "Phát hiện testset thay đổi: $CHANGED_TESTSET"
+        else
+          TESTSET_PATH="/app/data/gout_test_cases_mini.json"
+          echo "Không có testset mới thay đổi, dùng smoke test mặc định: $TESTSET_PATH"
+        fi
+
+        echo "testset_path=$TESTSET_PATH" >> "$GITHUB_OUTPUT"
+
     - name: Wait for Ollama rollout
       if: github.ref == 'refs/heads/main'
       run: kubectl rollout status deployment/ollama-worker -n ${{ env.K8S_NAMESPACE }} --timeout=600s
@@ -247,7 +263,7 @@ jobs:
       if: github.ref == 'refs/heads/main'
       run: |
         cp k8s/evaluation-job/job.yaml /tmp/evaluation-job-ci.yaml
-        sed -i '/name: TESTSET_PATH/{n;s|value: .*|value: /app/data/gout_test_cases_mini.json|;}' /tmp/evaluation-job-ci.yaml
+        sed -i '/name: TESTSET_PATH/{n;s|value: .*|value: ${{ steps.eval_testset.outputs.testset_path }}|;}' /tmp/evaluation-job-ci.yaml
 
         kubectl delete job evaluation-job -n ${{ env.K8S_NAMESPACE }} --ignore-not-found=true
         kubectl apply -f /tmp/evaluation-job-ci.yaml
