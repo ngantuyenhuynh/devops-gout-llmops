@@ -1,5 +1,5 @@
 #!/bin/bash
-MODELS=("qwen2:1.5b" "vinallama" "vistral" "phogpt")
+MODELS=("vinallama" "vistral" "phogpt")
 
 for MODEL in "${MODELS[@]}"; do
     echo "================================================="
