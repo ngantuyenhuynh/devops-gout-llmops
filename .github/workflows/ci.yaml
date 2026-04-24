@@ -14,12 +14,12 @@ on:
   workflow_dispatch:
 
 env:
-  PROJECT_ID: nt549-project         # SỬA: Thay bằng ID Project mới
-  REGION: asia-southeast1           # GIỮ NGUYÊN (Khu vực lưu Docker Image)
-  REPO_NAME: gout-llmops-repo       # GIỮ NGUYÊN (Tên kho chứa Image)
-  GKE_CLUSTER: gout-cluster         # SỬA: Tên cụm K8s mới của bạn
-  GKE_LOCATION: asia-southeast1-a   # GIỮ NGUYÊN (Vùng của cụm Zonal)
-  K8S_NAMESPACE: gout-eval          # GIỮ NGUYÊN
+  PROJECT_ID: ${{ vars.PROJECT_ID }}
+  REGION: ${{ vars.GCP_REGION }}
+  REPO_NAME: ${{ vars.REPO_NAME }}
+  GKE_CLUSTER: ${{ vars.GKE_CLUSTER }}
+  GKE_LOCATION: ${{ vars.GKE_LOCATION }}
+  K8S_NAMESPACE: ${{ vars.K8S_NAMESPACE }}
 
 concurrency:
   group: gout-eval-namespace-lock

@@ -1,69 +1,98 @@
-name: Full RAG Evaluation (Manual)
+name: Full RAG Evaluation
 
 on:
+  push:
+    branches: ["main"]
+  schedule:
+    # Run nightly at 01:00 UTC for continuous evaluation.
+    - cron: "0 1 * * *"
   workflow_dispatch:
+
+permissions:
+  contents: read
+  id-token: write
 
 concurrency:
   group: gout-eval-namespace-lock
   cancel-in-progress: false
 
 env:
-  PROJECT_ID: logical-carver-490713-d8
-  REGION: asia-southeast1
-  GKE_CLUSTER: cluster-1
-  GKE_LOCATION: asia-southeast1-a
-  K8S_NAMESPACE: gout-eval
+  REGION: ${{ vars.GCP_REGION }}
+  GKE_CLUSTER: ${{ vars.GKE_CLUSTER }}
+  GKE_LOCATION: ${{ vars.GKE_LOCATION }}
+  K8S_NAMESPACE: ${{ vars.K8S_NAMESPACE }}
+  EVALUATION_JOB_NAME: evaluation-job
+  FULL_TESTSET_PATH: /app/data/gout_test_cases.json
+  EVAL_TIMEOUT_SECONDS: "18000"
+  POLL_INTERVAL_SECONDS: "120"
 
 jobs:
   full-evaluation:
     runs-on: ubuntu-latest
+    timeout-minutes: 360
     steps:
-    - name: Checkout code
-      uses: actions/checkout@v3
+      - name: Checkout code
+        uses: actions/checkout@v4
 
-    - name: Authenticate to Google Cloud
-      uses: google-github-actions/auth@v1
-      with:
-        credentials_json: '${{ secrets.GCP_CREDENTIALS }}'
-
-    - name: Get GKE credentials
-      uses: google-github-actions/get-gke-credentials@v2
-      with:
-        cluster_name: ${{ env.GKE_CLUSTER }}
-        location: ${{ env.GKE_LOCATION }}
-
-    - name: Run Full Evaluation Job
-      run: |
-        # Thay thế file mini bằng file full 58 câu
-        sed -i 's/gout_test_cases_mini.json/gout_test_cases.json/g' k8s/evaluation-job/job.yaml
-        
-        kubectl delete job evaluation-job -n ${{ env.K8S_NAMESPACE }} --ignore-not-found=true
-        kubectl apply -f k8s/evaluation-job/job.yaml
-        
-        echo "Đang chờ đánh giá toàn diện (có thể mất 3-5 tiếng)..."
-        
-        # Vòng lặp chờ 5 tiếng (18000 giây) tránh đứt token GKE
-        TIMEOUT=18000 
-        ELAPSED=0
-        SLEEP_TIME=120 
-        
-        while [ $ELAPSED -lt $TIMEOUT ]; do
-          STATUS=$(kubectl get job evaluation-job -n ${{ env.K8S_NAMESPACE }} -o jsonpath='{.status.conditions[?(@.type=="Complete")].status}' 2>/dev/null || echo "Unknown")
-          FAILED=$(kubectl get job evaluation-job -n ${{ env.K8S_NAMESPACE }} -o jsonpath='{.status.conditions[?(@.type=="Failed")].status}' 2>/dev/null || echo "Unknown")
-          
-          if [ "$STATUS" == "True" ]; then
-            echo "Job Đánh giá đã hoàn tất thành công!"
-            exit 0
-          elif [ "$FAILED" == "True" ]; then
-            echo "Job Đánh giá đã thất bại! Đang lấy log..."
-            kubectl logs job/evaluation-job -n ${{ env.K8S_NAMESPACE }} || true
+      - name: Validate required configuration
+        run: |
+          missing=""
+          for var_name in REGION GKE_CLUSTER GKE_LOCATION K8S_NAMESPACE; do
+            if [ -z "${!var_name}" ]; then
+              missing="$missing $var_name"
+            fi
+          done
+          if [ -z "${{ secrets.GCP_CREDENTIALS }}" ]; then
+            missing="$missing GCP_CREDENTIALS(secret)"
+          fi
+          if [ -n "$missing" ]; then
+            echo "Missing required GitHub Variables/Secrets:$missing"
             exit 1
           fi
-          
-          echo "Vẫn đang chấm điểm... (Đã trôi qua $((ELAPSED/60)) phút)"
-          sleep $SLEEP_TIME
-          ELAPSED=$((ELAPSED + SLEEP_TIME))
-        done
-        
-        echo "Quá thời gian 5 tiếng (Timeout)!"
-        exit 1
+
+      - name: Authenticate to Google Cloud
+        uses: google-github-actions/auth@v2
+        with:
+          credentials_json: '${{ secrets.GCP_CREDENTIALS }}'
+
+      - name: Get GKE credentials
+        uses: google-github-actions/get-gke-credentials@v2
+        with:
+          cluster_name: ${{ env.GKE_CLUSTER }}
+          location: ${{ env.GKE_LOCATION }}
+
+      - name: Run Full Evaluation Job
+        run: |
+          TMP_JOB_FILE="$(mktemp)"
+          cp k8s/evaluation-job/job.yaml "$TMP_JOB_FILE"
+          sed -i "s|gout_test_cases_mini.json|$(basename "$FULL_TESTSET_PATH")|g" "$TMP_JOB_FILE"
+
+          kubectl delete job "$EVALUATION_JOB_NAME" -n "$K8S_NAMESPACE" --ignore-not-found=true
+          kubectl apply -f "$TMP_JOB_FILE"
+
+          echo "Waiting for full evaluation to complete (up to $((EVAL_TIMEOUT_SECONDS/3600)) hours)..."
+
+          elapsed=0
+          while [ "$elapsed" -lt "$EVAL_TIMEOUT_SECONDS" ]; do
+            status=$(kubectl get job "$EVALUATION_JOB_NAME" -n "$K8S_NAMESPACE" -o jsonpath='{.status.conditions[?(@.type=="Complete")].status}' 2>/dev/null || echo "Unknown")
+            failed=$(kubectl get job "$EVALUATION_JOB_NAME" -n "$K8S_NAMESPACE" -o jsonpath='{.status.conditions[?(@.type=="Failed")].status}' 2>/dev/null || echo "Unknown")
+
+            if [ "$status" = "True" ]; then
+              echo "Full evaluation completed successfully."
+              exit 0
+            fi
+
+            if [ "$failed" = "True" ]; then
+              echo "Full evaluation job failed. Printing logs..."
+              kubectl logs job/"$EVALUATION_JOB_NAME" -n "$K8S_NAMESPACE" || true
+              exit 1
+            fi
+
+            echo "Still running... elapsed $((elapsed/60)) minutes"
+            sleep "$POLL_INTERVAL_SECONDS"
+            elapsed=$((elapsed + POLL_INTERVAL_SECONDS))
+          done
+
+          echo "Timed out after $EVAL_TIMEOUT_SECONDS seconds."
+          kubectl logs job/"$EVALUATION_JOB_NAME" -n "$K8S_NAMESPACE" || true
+          exit 1
