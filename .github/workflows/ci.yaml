@@ -260,13 +260,16 @@ jobs:
       if: github.ref == 'refs/heads/main'
       run: |
         kubectl delete job evaluation-job -n ${{ env.K8S_NAMESPACE }} --ignore-not-found=true
+        
+        echo "⏳ Đang đợi 2 phút để Orchestrator nạp xong Model HuggingFace..."
+        sleep 120
+        
         kubectl apply -f k8s/evaluation-job/job.yaml
         
         if ! kubectl wait --for=condition=complete job/evaluation-job -n ${{ env.K8S_NAMESPACE }} --timeout=1800s; then
           echo "Smoke test thất bại cho model ${{ steps.eval_config.outputs.model_name }}!"
           kubectl logs job/evaluation-job -n ${{ env.K8S_NAMESPACE }} || true
-          kubectl describe job evaluation-job -n ${{ env.K8S_NAMESPACE }} || true
           exit 1
         fi
-        echo "Smoke test thành công cho model ${{ steps.eval_config.outputs.model_name }}!"
+        echo "Smoke test thành công!"
         kubectl logs job/evaluation-job -n ${{ env.K8S_NAMESPACE }} || true
