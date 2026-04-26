@@ -1,16 +1,6 @@
 [
   {
     "cap_do": "Kiến thức cơ bản",
-    "cau_hoi": "Trên phim chụp X-quang khớp, hình ảnh tổn thương của bệnh gút ở giai đoạn sớm và giai đoạn muộn khác nhau như thế nào?",
-    "ground_truth": "Ở giai đoạn sớm, X-quang chỉ thấy sưng nề phần mềm. Ở giai đoạn muộn, có thể thấy các khuyết xương hình hốc ở đầu xương, hẹp khe khớp, gai xương, hủy xương và biến dạng khớp."
-  },
-  {
-    "cap_do": "Kiến thức cơ bản",
-    "cau_hoi": "Giai đoạn 1 của bệnh gút trên lâm sàng được gọi là gì và đặc điểm của nó?",
-    "ground_truth": "Giai đoạn 1 là Tăng acid uric máu không triệu chứng. Ở giai đoạn này, bệnh nhân chưa bao giờ bị viêm khớp gút, không có sỏi thận urate, không có tophi. Giai đoạn này có thể kéo dài từ vài năm đến vài chục năm và chỉ một tỷ lệ nhỏ tiến triển thành bệnh gút."
-  },
-  {
-    "cap_do": "Kiến thức cơ bản",
     "cau_hoi": "Khi chẩn đoán bệnh gút, cần phân biệt viêm khớp gút cấp và viêm khớp gút mạn với những bệnh lý cơ xương khớp nào?",
     "ground_truth": "Với viêm khớp gút cấp, cần chẩn đoán phân biệt với viêm khớp nhiễm trùng, viêm mô tế bào quanh khớp, bệnh giả gút (pseudogout), chấn thương khớp, viêm khớp phản ứng, lao khớp. Với viêm khớp gút mạn, cần phân biệt với viêm khớp dạng thấp, viêm khớp vảy nến, thoái hóa khớp."
   },
