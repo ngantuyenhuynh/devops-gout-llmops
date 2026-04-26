@@ -13,7 +13,7 @@
     "cap_do": "Kiến thức cơ bản",
     "cau_hoi": "Khi chẩn đoán bệnh gút, cần phân biệt viêm khớp gút cấp và viêm khớp gút mạn với những bệnh lý cơ xương khớp nào?",
     "ground_truth": "Với viêm khớp gút cấp, cần chẩn đoán phân biệt với viêm khớp nhiễm trùng, viêm mô tế bào quanh khớp, bệnh giả gút (pseudogout), chấn thương khớp, viêm khớp phản ứng, lao khớp. Với viêm khớp gút mạn, cần phân biệt với viêm khớp dạng thấp, viêm khớp vảy nến, thoái hóa khớp."
-  }
+  },
   {
     "cap_do": "Kiến thức cơ bản",
     "cau_hoi": "Đối tượng nào có nguy cơ mắc bệnh gút cao nhất về mặt giới tính và độ tuổi?",
