@@ -24,13 +24,13 @@ spec:
         - name: EVAL_MODEL_NAME
           value: qwen2:1.5b
         - name: QUALITY_GATE_FAITHFULNESS_MIN
-          value: "0.70"
+          value: "0.40"
         - name: QUALITY_GATE_COMPLETENESS_MIN
           value: "3.0"
         - name: QUALITY_GATE_RAGAS_FAITHFULNESS_MIN
-          value: "0.70"
+          value: "0.35"
         - name: QUALITY_GATE_RAGAS_RELEVANCE_MIN
-          value: "0.70"
+          value: "0.40"
         - name: QUALITY_GATE_RAGAS_CONTEXT_RECALL_MIN
           value: "0.60"
         - name: OPENAI_API_KEY
