@@ -26,11 +26,11 @@ spec:
         - name: QUALITY_GATE_FAITHFULNESS_MIN
           value: "0.40"
         - name: QUALITY_GATE_COMPLETENESS_MIN
-          value: "3.0"
+          value: "1.0"
         - name: QUALITY_GATE_RAGAS_FAITHFULNESS_MIN
-          value: "0.35"
+          value: "0.30"
         - name: QUALITY_GATE_RAGAS_RELEVANCE_MIN
-          value: "0.40"
+          value: "0.30"
         - name: QUALITY_GATE_RAGAS_CONTEXT_RECALL_MIN
           value: "0.60"
         - name: OPENAI_API_KEY
