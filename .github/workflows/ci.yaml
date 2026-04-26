@@ -197,9 +197,9 @@ jobs:
         find k8s/ -type f -name "*.yaml" -exec sed -i "s|\(image: .*/evaluation-job\):latest|\1:${{ github.sha }}|g" {} +
         find k8s/ -type f -name "*.yaml" -exec sed -i "s|\(image: .*/gout-ui\):latest|\1:${{ github.sha }}|g" {} +
         
-        echo "2. Đồng bộ thư mục data/ lên K8s (Tránh lỗi ngậm file cũ)..."
-        kubectl create configmap gout-data-config --from-file=data/ --namespace=${{ env.K8S_NAMESPACE }} --dry-run=client -o yaml | kubectl apply -f -
-
+        echo "2. Đồng bộ file JSON lên K8s (Tránh quá tải size 256KB)..."
+        kubectl create configmap gout-data-config --from-file=data/gout_test_cases.json --namespace=${{ env.K8S_NAMESPACE }} --dry-run=client -o yaml | kubectl replace --force -f -
+    
     - name: Apply manifests
       if: github.ref == 'refs/heads/main'
       run: |
