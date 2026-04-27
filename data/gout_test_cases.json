@@ -1,6 +1,11 @@
 [
   {
     "cap_do": "Kiến thức cơ bản",
+    "cau_hoi": "Chỉ định và thời gian sử dụng thuốc dự phòng cơn gút cấp (Colchicine liều thấp) là như thế nào?",
+    "ground_truth": "Chỉ định phòng ngừa cơn gút cấp khi bắt đầu liệu pháp hạ acid uric máu (kéo dài ít nhất 3-6 tháng); hoặc dự phòng kéo dài cho những bệnh nhân có nhiều cơn gút tái phát song không dùng được các thuốc hạ acid uric máu."
+  },
+  {
+    "cap_do": "Kiến thức cơ bản",
     "cau_hoi": "Trong cơn gút cấp, ngoài sự thay đổi về acid uric máu, các xét nghiệm máu và cận lâm sàng khác (bạch cầu, VS, CRP) có biểu hiện gì?",
     "ground_truth": "Trong cơn gút cấp, có thể có sốt vừa hoặc nhẹ, tăng tốc độ lắng hồng cầu (VS tăng), CRP tăng, và có thể tăng nhẹ bạch cầu máu ngoại biên."
   },
