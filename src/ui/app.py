@@ -14,7 +14,7 @@ with st.sidebar:
         "🧠 Chọn Model:",
         ["qwen2:1.5b"]
     )
-    rag_enabled = st.checkbox("Kích hoạt RAG", value=True)
+    rag_enabled = st.checkbox("Kích hoạt mode RAG", value=True)
     if rag_enabled:
         st.success("Trạng thái RAG: Đang hoạt động")
     else:
