@@ -153,5 +153,6 @@
     "cap_do": "Cảnh báo đỏ",
     "cau_hoi": "Bệnh nhân bị sốt nhẹ kèm sưng khớp nên đã tự ý uống Aspirin để hạ sốt giảm đau. Việc sử dụng Aspirin tác động đến bệnh gút như thế nào?",
     "ground_truth": "Aspirin là một trong những loại thuốc gây cản trở và làm giảm đào thải acid uric ở thận, do đó sẽ làm tăng acid uric máu, gây ra gút thứ phát hoặc làm tình trạng bệnh gút hiện tại bùng phát nặng hơn."
-  }
+  },
+
 ]
