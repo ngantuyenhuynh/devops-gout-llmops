@@ -7,20 +7,65 @@ spec:
   project: default
   source:
     repoURL: 'https://prometheus-community.github.io/helm-charts'
-    targetRevision: 60.0.0
+    targetRevision: 61.3.0
     chart: kube-prometheus-stack
     helm:
       values: |
         grafana:
           adminPassword: "admin_password_tam_thoi"
+          replicas: 1
           service:
-            type: LoadBalancer # Hoặc ClusterIP nếu dùng Ingress
+            type: LoadBalancer
+          resources:
+            requests:
+              memory: "128Mi"
+              cpu: "50m"
+            limits:
+              memory: "256Mi"
+              cpu: "200m"
+          # CHANGE THIS: env must be a Map (key: value), not a List (-)
+          env: 
+            GF_INSTALL_PLUGINS: ""
+
         prometheus:
           prometheusSpec:
             serviceMonitorSelectorNilUsesHelmValues: false
             podMonitorSelectorNilUsesHelmValues: false
             ruleSelectorNilUsesHelmValues: false
             serviceMonitorNamespaceSelector: {}
+            resources:
+              requests:
+                memory: "512Mi"
+                cpu: "200m"
+              limits:
+                memory: "1Gi"
+                cpu: "500m"
+            retention: 2d
+            walCompression: true
+            storageSpec:
+              volumeClaimTemplate:
+                spec:
+                  accessModes: ["ReadWriteOnce"]
+                  resources:
+                    requests:
+                      storage: 1Gi
+
+        alertmanager:
+          alertmanagerSpec:
+            resources:
+              requests:
+                memory: "128Mi"
+                cpu: "50m"
+              limits:
+                memory: "256Mi"
+                cpu: "100m"
+            storageSpec:
+              volumeClaimTemplate:
+                spec:
+                  accessModes: ["ReadWriteOnce"]
+                  resources:
+                    requests:
+                      storage: 1Gi
   destination:
     server: 'https://kubernetes.default.svc'
     namespace: monitoring
@@ -31,3 +76,25 @@ spec:
     syncOptions:
       - CreateNamespace=true
       - ServerSideApply=true
+      - RespectIgnoreDifferences=true
+  ignoreDifferences:
+    - group: admissionregistration.k8s.io
+      kind: ValidatingWebhookConfiguration
+      jqPathExpressions: ['.webhooks[]?.clientConfig.caBundle']
+    - group: admissionregistration.k8s.io
+      kind: MutatingWebhookConfiguration
+      jqPathExpressions: ['.webhooks[]?.clientConfig.caBundle']
+
+    - group: monitoring.coreos.com
+      kind: Prometheus
+      jsonPointers: ["/spec"]
+    - group: monitoring.coreos.com
+      kind: Alertmanager
+      jsonPointers: ["/spec"]
+
+    - group: apps
+      kind: StatefulSet
+      jsonPointers:
+        - /spec/replicas # Tránh xung đột nếu HPA hoặc Operator tự scale
+        - /spec/template/metadata/annotations # Operator hay inject hash cấu hình vào đây
+        - /spec/template/spec/containers/0/env # Tránh Operator tự thêm env vars

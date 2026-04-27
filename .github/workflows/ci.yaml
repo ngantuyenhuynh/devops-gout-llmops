@@ -9,6 +9,7 @@ on:
       - 'src/evaluation-job/**'
       - 'k8s/**'
       - 'data/**'
+      - 'src/ui/**'
   pull_request:
     branches: [ "main" ]
   workflow_dispatch:
