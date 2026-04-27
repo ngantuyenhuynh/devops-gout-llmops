@@ -267,7 +267,7 @@ jobs:
         
         kubectl apply -f k8s/evaluation-job/job.yaml
         
-        if ! kubectl wait --for=condition=complete job/evaluation-job -n ${{ env.K8S_NAMESPACE }} --timeout=1800s; then
+        if ! kubectl wait --for=condition=complete job/evaluation-job -n ${{ env.K8S_NAMESPACE }} --timeout=3600s; then
           echo "Smoke test thất bại cho model ${{ steps.eval_config.outputs.model_name }}!"
           kubectl logs job/evaluation-job -n ${{ env.K8S_NAMESPACE }} || true
           exit 1
