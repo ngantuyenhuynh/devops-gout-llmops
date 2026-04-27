@@ -31,3 +31,14 @@ spec:
     syncOptions:
       - CreateNamespace=true
       - ServerSideApply=true
+  ignoreDifferences:
+    - group: admissionregistration.k8s.io
+      kind: ValidatingWebhookConfiguration
+      name: monitoring-stack-kube-prom-admission
+      jqPathExpressions:
+        - '.webhooks[]?.clientConfig.caBundle'
+    - group: admissionregistration.k8s.io
+      kind: MutatingWebhookConfiguration
+      name: monitoring-stack-kube-prom-admission
+      jqPathExpressions:
+        - '.webhooks[]?.clientConfig.caBundle'
