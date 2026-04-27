@@ -1,11 +1,6 @@
 [
   {
     "cap_do": "Kiến thức cơ bản",
-    "cau_hoi": "Trong cơn gút cấp, ngoài sự thay đổi về acid uric máu, các xét nghiệm máu và cận lâm sàng khác (bạch cầu, VS, CRP) có biểu hiện gì?",
-    "ground_truth": "Trong cơn gút cấp, có thể có sốt vừa hoặc nhẹ, tăng tốc độ lắng hồng cầu (VS tăng), CRP tăng, và có thể tăng nhẹ bạch cầu máu ngoại biên."
-  },
-  {
-    "cap_do": "Kiến thức cơ bản",
     "cau_hoi": "Trên phim chụp X-quang khớp, hình ảnh tổn thương của bệnh gút ở giai đoạn sớm và giai đoạn muộn khác nhau như thế nào?",
     "ground_truth": "Ở giai đoạn sớm, X-quang chỉ thấy sưng nề phần mềm. Ở giai đoạn muộn, có thể thấy các khuyết xương hình hốc ở đầu xương, hẹp khe khớp, gai xương, hủy xương và biến dạng khớp."
   },
