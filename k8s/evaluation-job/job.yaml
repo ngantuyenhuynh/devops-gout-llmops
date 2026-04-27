@@ -14,7 +14,7 @@ spec:
         imagePullPolicy: Always
         env:
         - name: ORCHESTRATOR_URL
-          value: http://eval-orchestrator-service:8000/ask
+          value: http://eval-orchestrator-service.gout-eval.svc.cluster.local:8000/ask
         - name: TESTSET_PATH
           value: /app/data/gout_test_cases.json
         - name: REQUEST_TIMEOUT
