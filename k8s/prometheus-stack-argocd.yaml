@@ -7,7 +7,7 @@ spec:
   project: default
   source:
     repoURL: 'https://prometheus-community.github.io/helm-charts'
-    targetRevision: 56.6.0
+    targetRevision: 60.0.0
     chart: kube-prometheus-stack
     helm:
       values: |
@@ -19,6 +19,7 @@ spec:
           prometheusSpec:
             serviceMonitorSelectorNilUsesHelmValues: false
             podMonitorSelectorNilUsesHelmValues: false
+            ruleSelectorNilUsesHelmValues: false
             serviceMonitorNamespaceSelector: {}
   destination:
     server: 'https://kubernetes.default.svc'
