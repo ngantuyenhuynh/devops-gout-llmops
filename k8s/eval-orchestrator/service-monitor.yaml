@@ -16,4 +16,14 @@ spec:
   endpoints:
   - port: http # Khớp với tên port nếu có định nghĩa trong service
     path: /metrics
-    interval: 15s
+    interval: 60s 
+    
+    sampleLimit: 1000 
+    
+    metricRelabelings:
+      - sourceLabels: [__name__]
+        regex: '^python_gc_.*'
+        action: drop
+        
+      - regex: '^client_ip|user_agent$'
+        action: labeldrop
