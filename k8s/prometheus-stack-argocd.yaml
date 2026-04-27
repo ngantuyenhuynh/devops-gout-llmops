@@ -19,6 +19,7 @@ spec:
           prometheusSpec:
             serviceMonitorSelectorNilUsesHelmValues: false
             podMonitorSelectorNilUsesHelmValues: false
+            ruleSelectorNilUsesHelmValues: false
             serviceMonitorNamespaceSelector: {}
   destination:
     server: 'https://kubernetes.default.svc'
