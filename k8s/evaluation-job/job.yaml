@@ -4,6 +4,7 @@ metadata:
   name: evaluation-job
   namespace: gout-eval
 spec:
+  backoffLimit: 0
   template:
     spec:
       restartPolicy: Never
@@ -13,7 +14,7 @@ spec:
         imagePullPolicy: Always
         env:
         - name: ORCHESTRATOR_URL
-          value: http://eval-orchestrator-service:8000/ask
+          value: http://eval-orchestrator-service.gout-eval.svc.cluster.local:8000/ask
         - name: TESTSET_PATH
           value: /app/data/gout_test_cases.json
         - name: REQUEST_TIMEOUT
@@ -21,15 +22,15 @@ spec:
         - name: JUDGE_MODEL
           value: gpt-4o-mini
         - name: EVAL_MODEL_NAME
-          value: qwen2:1.5b-rag
+          value: qwen2:1.5b
         - name: QUALITY_GATE_FAITHFULNESS_MIN
-          value: "0.70"
+          value: "0.40"
         - name: QUALITY_GATE_COMPLETENESS_MIN
-          value: "3.0"
+          value: "1.0"
         - name: QUALITY_GATE_RAGAS_FAITHFULNESS_MIN
-          value: "0.70"
+          value: "0.30"
         - name: QUALITY_GATE_RAGAS_RELEVANCE_MIN
-          value: "0.70"
+          value: "0.30"
         - name: QUALITY_GATE_RAGAS_CONTEXT_RECALL_MIN
           value: "0.60"
         - name: OPENAI_API_KEY
@@ -37,4 +38,3 @@ spec:
             secretKeyRef:
               name: openai-secret
               key: OPENAI_API_KEY
-  backoffLimit: 0

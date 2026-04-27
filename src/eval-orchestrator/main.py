@@ -26,7 +26,7 @@ vector_store = QdrantVectorStore(client=client, collection_name=COLLECTION_NAME,
 # 1. CẬP NHẬT Ở ĐÂY: Thêm model_name vào Request
 class QuestionRequest(BaseModel):
     question: str
-    model_name: str = "qwen2:1.5b" # Đặt Qwen làm mặc định nếu không ai truyền vào
+    model_name: str | None = None
 
 # Langfuse theo dõi toàn bộ luồng
 @observe(name="Gout_RAG_Pipeline")
@@ -57,16 +57,22 @@ TRẢ LỜI:"""
 
     # 3. CẬP NHẬT Ở ĐÂY: Truyền biến model_name vào payload của Ollama
     payload = {
-        "model": req.model_name, 
+        "model": req.model_name or "qwen2:1.5b",
         "prompt": prompt,
         "stream": False
     }
 
     try:
-        response = requests.post(OLLAMA_URL, json=payload)
+        response = requests.post(OLLAMA_URL, json=payload, timeout=900)
+        response.raise_for_status()
         response_data = response.json()
-        
-        answer = response_data.get("response", "Lỗi sinh text từ LLM")
+
+        if response_data.get("error"):
+            return {"error": f"Ollama error: {response_data['error']}"}
+
+        answer = str(response_data.get("response", "")).strip()
+        if not answer:
+            return {"error": f"Ollama returned no response: {response_data}"}
         
         # Lưu kết quả trả về vào Langfuse Trace
         langfuse_context.update_current_trace(output=answer)

@@ -1,0 +1,240 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: gout-llm-dashboard-full
+  namespace: monitoring
+  labels:
+    grafana_dashboard: "1"
+data:
+  gout-llm-full.json: |-
+    {
+      "annotations": {
+        "list": []
+      },
+      "editable": true,
+      "fiscalYearStartMonth": 0,
+      "graphTooltip": 0,
+      "links": [],
+      "liveNow": false,
+      "panels": [
+        {
+          "title": "Application Performance",
+          "type": "row",
+          "gridPos": {
+            "h": 1,
+            "w": 24,
+            "x": 0,
+            "y": 0
+          },
+          "collapsed": false
+        },
+        {
+          "title": "LLM Latency (P95) - /ask",
+          "type": "timeseries",
+          "gridPos": {
+            "h": 8,
+            "w": 12,
+            "x": 0,
+            "y": 1
+          },
+          "targets": [
+            {
+              "datasource": {
+                "type": "prometheus",
+                "uid": "prometheus"
+              },
+              "expr": "histogram_quantile(0.95, sum(rate(http_request_duration_seconds_bucket{handler=\"/ask\"}[5m])) by (le))",
+              "legendFormat": "P95 Latency"
+            }
+          ],
+          "fieldConfig": {
+            "defaults": {
+              "unit": "s",
+              "color": {
+                "mode": "palette-classic"
+              },
+              "custom": {
+                "drawStyle": "line",
+                "lineInterpolation": "smooth"
+              }
+            }
+          }
+        },
+        {
+          "title": "Requests per Minute",
+          "type": "gauge",
+          "gridPos": {
+            "h": 8,
+            "w": 12,
+            "x": 12,
+            "y": 1
+          },
+          "targets": [
+            {
+              "expr": "sum(rate(http_requests_total{app=\"eval-orchestrator\"}[1m])) * 60",
+              "legendFormat": "RPM"
+            }
+          ],
+          "fieldConfig": {
+            "defaults": {
+              "unit": "reqpm",
+              "min": 0,
+              "max": 100,
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "green",
+                    "value": null
+                  },
+                  {
+                    "color": "orange",
+                    "value": 60
+                  },
+                  {
+                    "color": "red",
+                    "value": 80
+                  }
+                ]
+              }
+            }
+          }
+        },
+        {
+          "title": "System Resources (Pods & Nodes)",
+          "type": "row",
+          "gridPos": {
+            "h": 1,
+            "w": 24,
+            "x": 0,
+            "y": 9
+          },
+          "collapsed": false
+        },
+        {
+          "title": "Pod Memory Usage",
+          "type": "timeseries",
+          "gridPos": {
+            "h": 8,
+            "w": 12,
+            "x": 0,
+            "y": 10
+          },
+          "targets": [
+            {
+              "expr": "sum(container_memory_working_set_bytes{namespace=\"gout-eval\",pod=~\"eval-orchestrator-.*\"}) by (pod)",
+              "legendFormat": "{{pod}}"
+            }
+          ],
+          "fieldConfig": {
+            "defaults": {
+              "unit": "bytes",
+              "color": {
+                "mode": "palette-classic"
+              }
+            }
+          }
+        },
+        {
+          "title": "Pod CPU Usage",
+          "type": "timeseries",
+          "gridPos": {
+            "h": 8,
+            "w": 12,
+            "x": 12,
+            "y": 10
+          },
+          "targets": [
+            {
+              "expr": "sum(node_namespace_pod_container:container_cpu_usage_seconds_total:sum_irate{namespace=\"gout-eval\", pod=~\"eval-orchestrator-.*\"}) by (pod)",
+              "legendFormat": "{{pod}}"
+            }
+          ],
+          "fieldConfig": {
+            "defaults": {
+              "unit": "cpu",
+              "color": {
+                "mode": "palette-classic"
+              }
+            }
+          }
+        },
+        {
+          "title": "Node Status",
+          "type": "row",
+          "gridPos": {
+            "h": 1,
+            "w": 24,
+            "x": 0,
+            "y": 18
+          },
+          "collapsed": false
+        },
+        {
+          "title": "Node CPU Load (%)",
+          "type": "timeseries",
+          "gridPos": {
+            "h": 8,
+            "w": 12,
+            "x": 0,
+            "y": 19
+          },
+          "targets": [
+            {
+              "expr": "100 - (avg by (instance) (irate(node_cpu_seconds_total{mode=\"idle\"}[5m])) * 100)",
+              "legendFormat": "{{instance}}"
+            }
+          ],
+          "fieldConfig": {
+            "defaults": {
+              "unit": "percent",
+              "min": 0,
+              "max": 100
+            }
+          }
+        },
+        {
+          "title": "Node Memory Available (%)",
+          "type": "timeseries",
+          "gridPos": {
+            "h": 8,
+            "w": 12,
+            "x": 12,
+            "y": 19
+          },
+          "targets": [
+            {
+              "expr": "node_memory_MemAvailable_bytes / node_memory_MemTotal_bytes * 100",
+              "legendFormat": "{{instance}}"
+            }
+          ],
+          "fieldConfig": {
+            "defaults": {
+              "unit": "percent",
+              "min": 0,
+              "max": 100
+            }
+          }
+        }
+      ],
+      "refresh": "5s",
+      "schemaVersion": 36,
+      "style": "dark",
+      "tags": [
+        "gout-llm",
+        "rag"
+      ],
+      "templating": {
+        "list": []
+      },
+      "time": {
+        "from": "now-1h",
+        "to": "now"
+      },
+      "timepicker": {},
+      "timezone": "",
+      "title": "Gout-LLM Full Monitoring",
+      "uid": "gout-full-mon-01",
+      "version": 1,
+      "weekStart": ""
+    }
