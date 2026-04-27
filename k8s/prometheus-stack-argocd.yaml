@@ -7,7 +7,7 @@ spec:
   project: default
   source:
     repoURL: 'https://prometheus-community.github.io/helm-charts'
-    targetRevision: 56.6.0
+    targetRevision: 61.3.0
     chart: kube-prometheus-stack
     helm:
       values: |
@@ -19,6 +19,7 @@ spec:
           prometheusSpec:
             serviceMonitorSelectorNilUsesHelmValues: false
             podMonitorSelectorNilUsesHelmValues: false
+            ruleSelectorNilUsesHelmValues: false
             serviceMonitorNamespaceSelector: {}
   destination:
     server: 'https://kubernetes.default.svc'
@@ -30,3 +31,14 @@ spec:
     syncOptions:
       - CreateNamespace=true
       - ServerSideApply=true
+  ignoreDifferences:
+    - group: admissionregistration.k8s.io
+      kind: ValidatingWebhookConfiguration
+      name: monitoring-stack-kube-prom-admission
+      jqPathExpressions:
+        - '.webhooks[]?.clientConfig.caBundle'
+    - group: admissionregistration.k8s.io
+      kind: MutatingWebhookConfiguration
+      name: monitoring-stack-kube-prom-admission
+      jqPathExpressions:
+        - '.webhooks[]?.clientConfig.caBundle'
