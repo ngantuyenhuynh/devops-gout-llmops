@@ -1,0 +1,174 @@
+name: "CD: Deploy to GKE & Smoke Test"
+
+on:
+  workflow_run:
+    workflows: ["CI: Build, Scan & Push Images"]
+    types: [completed]
+    branches: [ "main" ]
+  workflow_dispatch:
+
+env:
+  PROJECT_ID: ${{ vars.PROJECT_ID }}
+  REGION: ${{ vars.GCP_REGION }}
+  REPO_NAME: ${{ vars.REPO_NAME }}
+  GKE_CLUSTER: ${{ vars.GKE_CLUSTER }}
+  GKE_LOCATION: ${{ vars.GKE_LOCATION }}
+  K8S_NAMESPACE: ${{ vars.K8S_NAMESPACE }}
+
+concurrency:
+  group: gout-eval-namespace-lock
+  cancel-in-progress: false
+
+jobs:
+  deploy-and-evaluate:
+    runs-on: ubuntu-latest
+    # Chỉ chạy khi CI thành công (hoặc khi trigger thủ công)
+    if: ${{ github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success' }}
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Authenticate to Google Cloud
+      uses: google-github-actions/auth@v2
+      with:
+        credentials_json: '${{ secrets.GCP_CREDENTIALS }}'
+
+    - name: Get GKE credentials
+      uses: google-github-actions/get-gke-credentials@v2
+      with:
+        cluster_name: ${{ env.GKE_CLUSTER }}
+        location: ${{ env.GKE_LOCATION }}
+
+    # === BƯỚC 1: CHUẨN BỊ TRIỂN KHAI ===
+    - name: Detect Evaluation Testset
+      id: eval_testset
+      run: |
+        CHANGED_TESTSET=$(git diff --name-only "${{ github.event.workflow_run.head_sha || github.sha }}^" "${{ github.event.workflow_run.head_sha || github.sha }}" | grep -E '^data/gout_test_cases(_mini)?\.json(l)?$' | head -n 1 || true)
+        if [ -n "$CHANGED_TESTSET" ]; then
+          TESTSET_PATH="/app/${CHANGED_TESTSET}"
+          echo "Phát hiện testset thay đổi: $CHANGED_TESTSET"
+        else
+          TESTSET_PATH="/app/data/gout_test_cases_mini.json"
+          echo "Không có testset mới thay đổi, dùng mặc định: $TESTSET_PATH"
+        fi
+        echo "testset_path=$TESTSET_PATH" >> "$GITHUB_OUTPUT"
+
+    - name: Resolve Image SHA
+      id: image_sha
+      run: |
+        # Dùng SHA từ CI workflow nếu có, nếu không thì dùng SHA hiện tại
+        SHA="${{ github.event.workflow_run.head_sha || github.sha }}"
+        echo "sha=$SHA" >> "$GITHUB_OUTPUT"
+        echo "Sẽ deploy image với SHA: $SHA"
+
+    - name: Inject SHA Tags into K8s Manifests
+      run: |
+        SHA="${{ steps.image_sha.outputs.sha }}"
+        echo "Ép file cấu hình dùng Image SHA: $SHA..."
+        find k8s/ -type f -name "*.yaml" -exec sed -i "s|\(image: .*/eval-orchestrator\):latest|\1:$SHA|g" {} +
+        find k8s/ -type f -name "*.yaml" -exec sed -i "s|\(image: .*/data-ingestion\):latest|\1:$SHA|g" {} +
+        find k8s/ -type f -name "*.yaml" -exec sed -i "s|\(image: .*/evaluation-job\):latest|\1:$SHA|g" {} +
+        find k8s/ -type f -name "*.yaml" -exec sed -i "s|\(image: .*/gout-ui\):latest|\1:$SHA|g" {} +
+
+    - name: Sync Data ConfigMap
+      run: |
+        kubectl create configmap gout-data-config \
+          --from-file=data/gout_test_cases.json \
+          --namespace=${{ env.K8S_NAMESPACE }} \
+          --dry-run=client -o yaml | kubectl replace --force -f -
+
+    # === BƯỚC 2: UPSERT SECRETS ===
+    - name: Upsert Langfuse secret
+      run: |
+        kubectl create secret generic langfuse-secret \
+          --from-literal=secret-key='${{ secrets.LANGFUSE_SECRET_KEY }}' \
+          --from-literal=public-key='${{ secrets.LANGFUSE_PUBLIC_KEY }}' \
+          --namespace=${{ env.K8S_NAMESPACE }} \
+          --dry-run=client -o yaml | kubectl apply -f -
+
+    - name: Upsert OpenAI secret
+      run: |
+        kubectl create secret generic openai-secret \
+          --from-literal=api-key='${{ secrets.OPENAI_API_KEY }}' \
+          --namespace=${{ env.K8S_NAMESPACE }} \
+          --dry-run=client -o yaml | kubectl apply -f -
+
+    - name: Upsert SMTP secret
+      run: |
+        kubectl create secret generic smtp-secret \
+          --from-literal=username='${{ secrets.SMTP_AUTH_USERNAME }}' \
+          --from-literal=password='${{ secrets.SMTP_AUTH_PASSWORD }}' \
+          --namespace=monitoring \
+          --dry-run=client -o yaml | kubectl apply -f -
+
+    # === BƯỚC 3: DEPLOY MANIFESTS ===
+    - name: Apply K8s manifests
+      run: |
+        kubectl apply -f k8s/vector-db/qdrant.yaml
+        kubectl apply -f k8s/inference-worker/ollama.yaml
+        kubectl apply -f k8s/eval-orchestrator/deployment.yaml
+        kubectl apply -f k8s/eval-orchestrator/service.yaml
+        kubectl apply -f k8s/eval-orchestrator/service-monitor.yaml
+        kubectl apply -f k8s/ui/deployment.yaml
+        kubectl apply -f k8s/ui/service.yaml
+
+        kubectl delete job gout-ingestion-job -n ${{ env.K8S_NAMESPACE }} --ignore-not-found=true
+        kubectl apply -f k8s/data-ingestion/job.yaml
+
+    - name: Wait for eval-orchestrator rollout
+      run: kubectl rollout status deployment/eval-orchestrator -n ${{ env.K8S_NAMESPACE }} --timeout=300s
+
+    # === BƯỚC 4: SMOKE TEST ===
+    - name: Extract Evaluation Config
+      id: eval_config
+      run: |
+        MODEL_NAME=$(awk '/name: EVAL_MODEL_NAME/{getline; sub(/^[[:space:]]*value:[[:space:]]*/, "", $0); print; exit}' k8s/evaluation-job/job.yaml)
+        if [ -z "$MODEL_NAME" ]; then
+          echo "Không tìm thấy EVAL_MODEL_NAME trong k8s/evaluation-job/job.yaml"
+          exit 1
+        fi
+        echo "model_name=$MODEL_NAME" >> "$GITHUB_OUTPUT"
+        echo "Đánh giá model: $MODEL_NAME"
+
+    - name: Wait for Ollama rollout
+      run: kubectl rollout status deployment/ollama-worker -n ${{ env.K8S_NAMESPACE }} --timeout=600s
+
+    - name: Pull Evaluation Model in Ollama
+      run: |
+        echo "Đang tải model ${{ steps.eval_config.outputs.model_name }} vào Ollama..."
+        kubectl exec -n ${{ env.K8S_NAMESPACE }} deployment/ollama-worker -- ollama pull "${{ steps.eval_config.outputs.model_name }}"
+
+    - name: Run Smoke Test (Mini Eval)
+      run: |
+        kubectl delete job evaluation-job -n ${{ env.K8S_NAMESPACE }} --ignore-not-found=true
+
+        echo "⏳ Đang đợi 2 phút để Orchestrator nạp xong Model HuggingFace..."
+        sleep 120
+
+        kubectl apply -f k8s/evaluation-job/job.yaml
+
+        if ! kubectl wait --for=condition=complete job/evaluation-job -n ${{ env.K8S_NAMESPACE }} --timeout=3600s; then
+          echo "Smoke test thất bại cho model ${{ steps.eval_config.outputs.model_name }}!"
+          kubectl logs job/evaluation-job -n ${{ env.K8S_NAMESPACE }} || true
+          exit 1
+        fi
+        echo "Smoke test thành công!"
+        kubectl logs job/evaluation-job -n ${{ env.K8S_NAMESPACE }} || true
+
+    # === BƯỚC 5: UPLOAD KẾT QUẢ ===
+    - name: Collect Evaluation Results
+      if: always()
+      run: |
+        mkdir -p eval-artifacts
+        kubectl logs job/evaluation-job -n ${{ env.K8S_NAMESPACE }} > eval-artifacts/evaluation-log.txt 2>&1 || true
+        echo "commit=${{ steps.image_sha.outputs.sha }}" > eval-artifacts/metadata.txt
+        echo "model=${{ steps.eval_config.outputs.model_name }}" >> eval-artifacts/metadata.txt
+        echo "timestamp=$(date -u +%Y-%m-%dT%H:%M:%SZ)" >> eval-artifacts/metadata.txt
+
+    - name: Upload Evaluation Artifacts
+      if: always()
+      uses: actions/upload-artifact@v4
+      with:
+        name: eval-results-${{ steps.image_sha.outputs.sha }}
+        path: eval-artifacts/
+        retention-days: 30
