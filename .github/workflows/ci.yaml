@@ -115,7 +115,7 @@ jobs:
           docker push $IMAGE_PATH:latest
         fi
         
-    # === BƯỚC 3.5: BUILD VÀ PUSH IMAGE (EVALUATION-JOB) ===
+    # === BƯỚC 3.5: BUILD, QUÉT VÀ PUSH IMAGE (EVALUATION-JOB) ===
     - name: Build Evaluation Job Local
       uses: docker/build-push-action@v5
       with:
@@ -125,6 +125,14 @@ jobs:
         tags: evaluation-job:test
         cache-from: type=gha
         cache-to: type=gha,mode=max
+
+    - name: Scan Evaluation Job Image
+      uses: aquasecurity/trivy-action@master
+      with:
+        image-ref: 'evaluation-job:test'
+        format: 'table'
+        exit-code: '0'
+        severity: 'CRITICAL,HIGH'
 
     - name: Push Evaluation Job Image
       run: |
@@ -200,6 +208,16 @@ jobs:
         
         echo "2. Đồng bộ file JSON lên K8s (Tránh quá tải size 256KB)..."
         kubectl create configmap gout-data-config --from-file=data/gout_test_cases.json --namespace=${{ env.K8S_NAMESPACE }} --dry-run=client -o yaml | kubectl replace --force -f -
+
+    # 🚀 FIX: Upsert Langfuse secret trước khi deploy
+    - name: Upsert Langfuse secret
+      if: github.ref == 'refs/heads/main'
+      run: |
+        kubectl create secret generic langfuse-secret \
+          --from-literal=secret-key='${{ secrets.LANGFUSE_SECRET_KEY }}' \
+          --from-literal=public-key='${{ secrets.LANGFUSE_PUBLIC_KEY }}' \
+          --namespace=${{ env.K8S_NAMESPACE }} \
+          --dry-run=client -o yaml | kubectl apply -f -
     
     - name: Apply manifests
       if: github.ref == 'refs/heads/main'
@@ -209,7 +227,8 @@ jobs:
         kubectl apply -f k8s/eval-orchestrator/deployment.yaml
         kubectl apply -f k8s/eval-orchestrator/service.yaml
         kubectl apply -f k8s/eval-orchestrator/service-monitor.yaml
-        kubectl apply -f k8s/ui-deployment.yaml
+        kubectl apply -f k8s/ui/deployment.yaml
+        kubectl apply -f k8s/ui/service.yaml
 
         kubectl delete job gout-ingestion-job -n ${{ env.K8S_NAMESPACE }} --ignore-not-found=true
         kubectl apply -f k8s/data-ingestion/job.yaml
@@ -274,3 +293,21 @@ jobs:
         fi
         echo "Smoke test thành công!"
         kubectl logs job/evaluation-job -n ${{ env.K8S_NAMESPACE }} || true
+
+    # === BƯỚC 5: UPLOAD KẾT QUẢ ĐÁNH GIÁ LÀM ARTIFACT ===
+    - name: Collect Evaluation Results
+      if: github.ref == 'refs/heads/main' && always()
+      run: |
+        mkdir -p eval-artifacts
+        kubectl logs job/evaluation-job -n ${{ env.K8S_NAMESPACE }} > eval-artifacts/evaluation-log.txt 2>&1 || true
+        echo "commit=${{ github.sha }}" > eval-artifacts/metadata.txt
+        echo "model=${{ steps.eval_config.outputs.model_name }}" >> eval-artifacts/metadata.txt
+        echo "timestamp=$(date -u +%Y-%m-%dT%H:%M:%SZ)" >> eval-artifacts/metadata.txt
+
+    - name: Upload Evaluation Artifacts
+      if: github.ref == 'refs/heads/main' && always()
+      uses: actions/upload-artifact@v4
+      with:
+        name: eval-results-${{ github.sha }}
+        path: eval-artifacts/
+        retention-days: 30

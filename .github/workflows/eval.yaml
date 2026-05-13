@@ -79,7 +79,7 @@ jobs:
 
             if [ "$status" = "True" ]; then
               echo "Full evaluation completed successfully."
-              exit 0
+              break
             fi
 
             if [ "$failed" = "True" ]; then
@@ -93,6 +93,26 @@ jobs:
             elapsed=$((elapsed + POLL_INTERVAL_SECONDS))
           done
 
-          echo "Timed out after $EVAL_TIMEOUT_SECONDS seconds."
-          kubectl logs job/"$EVALUATION_JOB_NAME" -n "$K8S_NAMESPACE" || true
-          exit 1
+          if [ "$elapsed" -ge "$EVAL_TIMEOUT_SECONDS" ]; then
+            echo "Timed out after $EVAL_TIMEOUT_SECONDS seconds."
+            kubectl logs job/"$EVALUATION_JOB_NAME" -n "$K8S_NAMESPACE" || true
+            exit 1
+          fi
+
+      # === UPLOAD KẾT QUẢ ĐÁNH GIÁ ===
+      - name: Collect Evaluation Results
+        if: always()
+        run: |
+          mkdir -p eval-artifacts
+          kubectl logs job/"$EVALUATION_JOB_NAME" -n "$K8S_NAMESPACE" > eval-artifacts/full-evaluation-log.txt 2>&1 || true
+          echo "trigger=${{ github.event_name }}" > eval-artifacts/metadata.txt
+          echo "commit=${{ github.sha }}" >> eval-artifacts/metadata.txt
+          echo "timestamp=$(date -u +%Y-%m-%dT%H:%M:%SZ)" >> eval-artifacts/metadata.txt
+
+      - name: Upload Full Evaluation Artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: full-eval-results-${{ github.run_id }}
+          path: eval-artifacts/
+          retention-days: 90

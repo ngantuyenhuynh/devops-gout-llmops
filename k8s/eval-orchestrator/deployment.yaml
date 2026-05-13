@@ -26,8 +26,14 @@ spec:
         - containerPort: 8000     # <--- SỬA 80 THÀNH 8000 CHO KHỚP VỚI DOCKERFILE
         env:
         - name: LANGFUSE_SECRET_KEY
-          value: "sk-lf-..." # Điền secret key từ langfuse.com
+          valueFrom:
+            secretKeyRef:
+              name: langfuse-secret
+              key: secret-key
         - name: LANGFUSE_PUBLIC_KEY
-          value: "pk-lf-..." # Điền public key từ langfuse.com
+          valueFrom:
+            secretKeyRef:
+              name: langfuse-secret
+              key: public-key
         - name: LANGFUSE_HOST
           value: "https://cloud.langfuse.com"
