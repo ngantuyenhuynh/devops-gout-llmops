@@ -1,13 +1,10 @@
-name: "CI: Build, Scan & Push Images"
+name: "CI: Build, Scan & Push Services"
 
 on:
   push:
     branches: [ "main", "dev" ]
     paths:
-      - 'src/eval-orchestrator/**'
-      - 'src/data-ingestion/**'
-      - 'src/evaluation-job/**'
-      - 'src/ui/**'
+      - 'src/**'
   pull_request:
     branches: [ "main" ]
   workflow_dispatch:
@@ -18,148 +15,206 @@ env:
   REPO_NAME: ${{ vars.REPO_NAME }}
 
 jobs:
-  build-scan-push:
+  # ==========================================
+  # JOB 1: QUÉT BẢO MẬT MÃ NGUỒN (CHẠY TRƯỚC)
+  # ==========================================
+  security-audit:
+    name: "Audit: Repository Security Scan"
     runs-on: ubuntu-latest
     steps:
-    - name: Checkout code
-      uses: actions/checkout@v4
+      - uses: actions/checkout@v4
+      - name: Run Trivy vulnerability scanner
+        uses: aquasecurity/trivy-action@master
+        with:
+          scan-type: 'fs'
+          ignore-unfixed: true
+          format: 'table'
+          exit-code: '0'
+          severity: 'CRITICAL,HIGH'
 
-    # === QUÉT BẢO MẬT MÃ NGUỒN (FS SCAN) ===
-    - name: Run Trivy vulnerability scanner (Repo Scan)
-      uses: aquasecurity/trivy-action@master
-      with:
-        scan-type: 'fs'
-        ignore-unfixed: true
-        format: 'table'
-        exit-code: '0'
-        severity: 'CRITICAL,HIGH'
+  # ==========================================
+  # JOB 2: SERVICE - EVAL ORCHESTRATOR
+  # ==========================================
+  build-orchestrator:
+    name: "Build: Eval Orchestrator"
+    needs: security-audit # Chờ quét bảo mật xong mới chạy
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: docker/setup-buildx-action@v3
+      - uses: google-github-actions/auth@v2
+        with:
+          credentials_json: '${{ secrets.GCP_CREDENTIALS }}'
+      - uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGION }}-docker.pkg.dev
+          username: _json_key
+          password: ${{ secrets.GCP_CREDENTIALS }}
+      
+      - name: Build & Load
+        uses: docker/build-push-action@v5
+        with:
+          context: ./src/eval-orchestrator
+          load: true
+          tags: eval-orchestrator:test
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
 
-    - name: Set up Docker Buildx
-      uses: docker/setup-buildx-action@v3
+      - name: Scan Image
+        uses: aquasecurity/trivy-action@master
+        with:
+          image-ref: 'eval-orchestrator:test'
+          format: 'table'
+          exit-code: '0'
+          severity: 'CRITICAL,HIGH'
 
-    - name: Authenticate to Google Cloud
-      uses: google-github-actions/auth@v1
-      with:
-        credentials_json: '${{ secrets.GCP_CREDENTIALS }}'
+      - name: Push to Artifact Registry
+        run: |
+          IMAGE_PATH=${{ env.REGION }}-docker.pkg.dev/${{ env.PROJECT_ID }}/${{ env.REPO_NAME }}/eval-orchestrator
+          docker tag eval-orchestrator:test $IMAGE_PATH:${{ github.sha }}
+          docker push $IMAGE_PATH:${{ github.sha }}
+          if [ "${{ github.ref }}" = "refs/heads/main" ]; then
+            docker tag eval-orchestrator:test $IMAGE_PATH:latest
+            docker push $IMAGE_PATH:latest
+          fi
 
-    - name: Login to Artifact Registry
-      uses: docker/login-action@v3
-      with:
-        registry: ${{ env.REGION }}-docker.pkg.dev
-        username: _json_key
-        password: ${{ secrets.GCP_CREDENTIALS }}
+  # ==========================================
+  # JOB 3: SERVICE - DATA INGESTION
+  # ==========================================
+  build-ingestion:
+    name: "Build: Data Ingestion"
+    needs: security-audit
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: docker/setup-buildx-action@v3
+      - uses: google-github-actions/auth@v2
+        with:
+          credentials_json: '${{ secrets.GCP_CREDENTIALS }}'
+      - uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGION }}-docker.pkg.dev
+          username: _json_key
+          password: ${{ secrets.GCP_CREDENTIALS }}
+      
+      - name: Build & Load
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: src/data-ingestion/Dockerfile
+          load: true
+          tags: data-ingestion:test
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
 
-    # === BUILD, SCAN & PUSH: EVAL-ORCHESTRATOR ===
-    - name: Build Eval-Orchestrator
-      uses: docker/build-push-action@v5
-      with:
-        context: ./src/eval-orchestrator
-        load: true
-        tags: eval-orchestrator:test
-        cache-from: type=gha
-        cache-to: type=gha,mode=max
+      - name: Scan Image
+        uses: aquasecurity/trivy-action@master
+        with:
+          image-ref: 'data-ingestion:test'
+          format: 'table'
+          exit-code: '0'
+          severity: 'CRITICAL'
 
-    - name: Scan Eval-Orchestrator Image
-      uses: aquasecurity/trivy-action@master
-      with:
-        image-ref: 'eval-orchestrator:test'
-        format: 'table'
-        exit-code: '0'
-        severity: 'CRITICAL,HIGH'
+      - name: Push to Artifact Registry
+        run: |
+          IMAGE_PATH=${{ env.REGION }}-docker.pkg.dev/${{ env.PROJECT_ID }}/${{ env.REPO_NAME }}/data-ingestion
+          docker tag data-ingestion:test $IMAGE_PATH:${{ github.sha }}
+          docker push $IMAGE_PATH:${{ github.sha }}
+          if [ "${{ github.ref }}" = "refs/heads/main" ]; then
+            docker tag data-ingestion:test $IMAGE_PATH:latest
+            docker push $IMAGE_PATH:latest
+          fi
 
-    - name: Push Eval-Orchestrator
-      run: |
-        IMAGE_PATH=${{ env.REGION }}-docker.pkg.dev/${{ env.PROJECT_ID }}/${{ env.REPO_NAME }}/eval-orchestrator
-        docker tag eval-orchestrator:test $IMAGE_PATH:${{ github.sha }}
-        docker push $IMAGE_PATH:${{ github.sha }}
-        if [ "${{ github.ref }}" = "refs/heads/main" ]; then
-          docker tag eval-orchestrator:test $IMAGE_PATH:latest
-          docker push $IMAGE_PATH:latest
-        fi
+  # ==========================================
+  # JOB 4: SERVICE - EVALUATION JOB
+  # ==========================================
+  build-eval-job:
+    name: "Build: Evaluation Job"
+    needs: security-audit
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: docker/setup-buildx-action@v3
+      - uses: google-github-actions/auth@v2
+        with:
+          credentials_json: '${{ secrets.GCP_CREDENTIALS }}'
+      - uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGION }}-docker.pkg.dev
+          username: _json_key
+          password: ${{ secrets.GCP_CREDENTIALS }}
+      
+      - name: Build & Load
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: src/evaluation-job/Dockerfile
+          load: true
+          tags: evaluation-job:test
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
 
-    # === BUILD, SCAN & PUSH: DATA-INGESTION ===
-    - name: Build Data-Ingestion
-      uses: docker/build-push-action@v5
-      with:
-        context: .
-        file: src/data-ingestion/Dockerfile
-        load: true
-        tags: data-ingestion:test
-        cache-from: type=gha
-        cache-to: type=gha,mode=max
+      - name: Scan Image
+        uses: aquasecurity/trivy-action@master
+        with:
+          image-ref: 'evaluation-job:test'
+          format: 'table'
+          exit-code: '0'
+          severity: 'CRITICAL,HIGH'
 
-    - name: Scan Data-Ingestion Image
-      uses: aquasecurity/trivy-action@master
-      with:
-        image-ref: 'data-ingestion:test'
-        format: 'table'
-        exit-code: '0'
-        severity: 'CRITICAL'
+      - name: Push to Artifact Registry
+        run: |
+          IMAGE_PATH=${{ env.REGION }}-docker.pkg.dev/${{ env.PROJECT_ID }}/${{ env.REPO_NAME }}/evaluation-job
+          docker tag evaluation-job:test $IMAGE_PATH:${{ github.sha }}
+          docker push $IMAGE_PATH:${{ github.sha }}
+          if [ "${{ github.ref }}" = "refs/heads/main" ]; then
+            docker tag evaluation-job:test $IMAGE_PATH:latest
+            docker push $IMAGE_PATH:latest
+          fi
 
-    - name: Push Data-Ingestion
-      run: |
-        IMAGE_PATH=${{ env.REGION }}-docker.pkg.dev/${{ env.PROJECT_ID }}/${{ env.REPO_NAME }}/data-ingestion
-        docker tag data-ingestion:test $IMAGE_PATH:${{ github.sha }}
-        docker push $IMAGE_PATH:${{ github.sha }}
-        if [ "${{ github.ref }}" = "refs/heads/main" ]; then
-          docker tag data-ingestion:test $IMAGE_PATH:latest
-          docker push $IMAGE_PATH:latest
-        fi
+  # ==========================================
+  # JOB 5: SERVICE - STREAMLIT UI
+  # ==========================================
+  build-ui:
+    name: "Build: Streamlit UI"
+    needs: security-audit
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: docker/setup-buildx-action@v3
+      - uses: google-github-actions/auth@v2
+        with:
+          credentials_json: '${{ secrets.GCP_CREDENTIALS }}'
+      - uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGION }}-docker.pkg.dev
+          username: _json_key
+          password: ${{ secrets.GCP_CREDENTIALS }}
+      
+      - name: Build & Load
+        uses: docker/build-push-action@v5
+        with:
+          context: ./src/ui
+          file: ./src/ui/Dockerfile
+          load: true
+          tags: gout-ui:test
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
 
-    # === BUILD, SCAN & PUSH: EVALUATION-JOB ===
-    - name: Build Evaluation Job
-      uses: docker/build-push-action@v5
-      with:
-        context: .
-        file: src/evaluation-job/Dockerfile
-        load: true
-        tags: evaluation-job:test
-        cache-from: type=gha
-        cache-to: type=gha,mode=max
+      - name: Scan Image
+        uses: aquasecurity/trivy-action@master
+        with:
+          image-ref: 'gout-ui:test'
+          format: 'table'
+          exit-code: '0'
+          severity: 'CRITICAL,HIGH'
 
-    - name: Scan Evaluation Job Image
-      uses: aquasecurity/trivy-action@master
-      with:
-        image-ref: 'evaluation-job:test'
-        format: 'table'
-        exit-code: '0'
-        severity: 'CRITICAL,HIGH'
-
-    - name: Push Evaluation Job
-      run: |
-        IMAGE_PATH=${{ env.REGION }}-docker.pkg.dev/${{ env.PROJECT_ID }}/${{ env.REPO_NAME }}/evaluation-job
-        docker tag evaluation-job:test $IMAGE_PATH:${{ github.sha }}
-        docker push $IMAGE_PATH:${{ github.sha }}
-        if [ "${{ github.ref }}" = "refs/heads/main" ]; then
-          docker tag evaluation-job:test $IMAGE_PATH:latest
-          docker push $IMAGE_PATH:latest
-        fi
-
-    # === BUILD, SCAN & PUSH: STREAMLIT UI ===
-    - name: Build Streamlit UI
-      uses: docker/build-push-action@v5
-      with:
-        context: ./src/ui
-        file: ./src/ui/Dockerfile
-        load: true
-        tags: gout-ui:test
-        cache-from: type=gha
-        cache-to: type=gha,mode=max
-
-    - name: Scan Streamlit UI Image
-      uses: aquasecurity/trivy-action@master
-      with:
-        image-ref: 'gout-ui:test'
-        format: 'table'
-        exit-code: '0'
-        severity: 'CRITICAL,HIGH'
-
-    - name: Push Streamlit UI
-      run: |
-        IMAGE_PATH=${{ env.REGION }}-docker.pkg.dev/${{ env.PROJECT_ID }}/${{ env.REPO_NAME }}/gout-ui
-        docker tag gout-ui:test $IMAGE_PATH:${{ github.sha }}
-        docker push $IMAGE_PATH:${{ github.sha }}
-        if [ "${{ github.ref }}" = "refs/heads/main" ]; then
-          docker tag gout-ui:test $IMAGE_PATH:latest
-          docker push $IMAGE_PATH:latest
-        fi
+      - name: Push to Artifact Registry
+        run: |
+          IMAGE_PATH=${{ env.REGION }}-docker.pkg.dev/${{ env.PROJECT_ID }}/${{ env.REPO_NAME }}/gout-ui
+          docker tag gout-ui:test $IMAGE_PATH:${{ github.sha }}
+          docker push $IMAGE_PATH:${{ github.sha }}
+          if [ "${{ github.ref }}" = "refs/heads/main" ]; then
+            docker tag gout-ui:test $IMAGE_PATH:latest
+            docker push $IMAGE_PATH:latest
+          fi
