@@ -37,19 +37,26 @@ jobs:
   # ==========================================
   build-orchestrator:
     name: "Build: Eval Orchestrator"
-    needs: security-audit # Chờ quét bảo mật xong mới chạy
+    needs: security-audit
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
       - uses: docker/setup-buildx-action@v3
-      - uses: google-github-actions/auth@v2
+      
+      # [ĐÃ SỬA] Dùng Access Token thay vì JSON Key thô
+      - name: Authenticate to Google Cloud
+        id: auth
+        uses: google-github-actions/auth@v2
         with:
           credentials_json: '${{ secrets.GCP_CREDENTIALS }}'
-      - uses: docker/login-action@v3
+          token_format: 'access_token'
+          
+      - name: Login to Artifact Registry
+        uses: docker/login-action@v3
         with:
           registry: ${{ env.REGION }}-docker.pkg.dev
-          username: _json_key
-          password: ${{ secrets.GCP_CREDENTIALS }}
+          username: oauth2accesstoken
+          password: ${{ steps.auth.outputs.access_token }}
       
       - name: Build & Load
         uses: docker/build-push-action@v5
@@ -88,14 +95,21 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: docker/setup-buildx-action@v3
-      - uses: google-github-actions/auth@v2
+      
+      # [ĐÃ SỬA] Dùng Access Token thay vì JSON Key thô
+      - name: Authenticate to Google Cloud
+        id: auth
+        uses: google-github-actions/auth@v2
         with:
           credentials_json: '${{ secrets.GCP_CREDENTIALS }}'
-      - uses: docker/login-action@v3
+          token_format: 'access_token'
+          
+      - name: Login to Artifact Registry
+        uses: docker/login-action@v3
         with:
           registry: ${{ env.REGION }}-docker.pkg.dev
-          username: _json_key
-          password: ${{ secrets.GCP_CREDENTIALS }}
+          username: oauth2accesstoken
+          password: ${{ steps.auth.outputs.access_token }}
       
       - name: Build & Load
         uses: docker/build-push-action@v5
@@ -135,14 +149,21 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: docker/setup-buildx-action@v3
-      - uses: google-github-actions/auth@v2
+      
+      # [ĐÃ SỬA] Dùng Access Token thay vì JSON Key thô
+      - name: Authenticate to Google Cloud
+        id: auth
+        uses: google-github-actions/auth@v2
         with:
           credentials_json: '${{ secrets.GCP_CREDENTIALS }}'
-      - uses: docker/login-action@v3
+          token_format: 'access_token'
+          
+      - name: Login to Artifact Registry
+        uses: docker/login-action@v3
         with:
           registry: ${{ env.REGION }}-docker.pkg.dev
-          username: _json_key
-          password: ${{ secrets.GCP_CREDENTIALS }}
+          username: oauth2accesstoken
+          password: ${{ steps.auth.outputs.access_token }}
       
       - name: Build & Load
         uses: docker/build-push-action@v5
@@ -182,14 +203,21 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: docker/setup-buildx-action@v3
-      - uses: google-github-actions/auth@v2
+      
+      # [ĐÃ SỬA] Dùng Access Token thay vì JSON Key thô
+      - name: Authenticate to Google Cloud
+        id: auth
+        uses: google-github-actions/auth@v2
         with:
           credentials_json: '${{ secrets.GCP_CREDENTIALS }}'
-      - uses: docker/login-action@v3
+          token_format: 'access_token'
+          
+      - name: Login to Artifact Registry
+        uses: docker/login-action@v3
         with:
           registry: ${{ env.REGION }}-docker.pkg.dev
-          username: _json_key
-          password: ${{ secrets.GCP_CREDENTIALS }}
+          username: oauth2accesstoken
+          password: ${{ steps.auth.outputs.access_token }}
       
       - name: Build & Load
         uses: docker/build-push-action@v5
