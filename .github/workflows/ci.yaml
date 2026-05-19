@@ -5,9 +5,8 @@ on:
     branches: [ "main", "dev" ]
     paths:
       - 'src/**'
-      - 'k8s/**'                  # [ĐÃ THÊM] Sửa hạ tầng K8s là tự động kích hoạt
-      - '.github/workflows/**'    # [ĐÃ THÊM] Sửa file pipeline là tự động kích hoạt
-      - 'data/**'
+      - 'k8s/**'
+      - '.github/workflows/ci.yaml' # Chỉ kích hoạt khi sửa chính file này
   pull_request:
     branches: [ "main" ]
   workflow_dispatch:
