@@ -1,0 +1,15 @@
+replicaCount: 1
+
+image:
+  repository: asia-southeast1-docker.pkg.dev/nt114-q21/gout-llmops-repo/default-service
+  tag: "latest"
+  pullPolicy: Always
+
+service:
+  type: ClusterIP
+  port: 80
+
+containerPort: 8000
+
+env: {}
+  # Biến môi trường sẽ được truyền vào đây nếu có
