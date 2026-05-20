@@ -97,11 +97,10 @@ jobs:
           --namespace=${{ env.K8S_NAMESPACE }} \
           --dry-run=client -o yaml | kubectl apply -f -
 
-    - name: Upsert SMTP secret
+    - name: Upsert Telegram secret
       run: |
-        kubectl create secret generic smtp-secret \
-          --from-literal=username='${{ secrets.SMTP_AUTH_USERNAME }}' \
-          --from-literal=password='${{ secrets.SMTP_AUTH_PASSWORD }}' \
+        kubectl create secret generic telegram-secret \
+          --from-literal=bot-token='${{ secrets.TELEGRAM_BOT_TOKEN }}' \
           --namespace=monitoring \
           --dry-run=client -o yaml | kubectl apply -f -
 
