@@ -65,10 +65,9 @@ jobs:
       run: |
         SHA="${{ steps.image_sha.outputs.sha }}"
         echo "Ép file cấu hình dùng Image SHA: $SHA..."
-        find k8s/ -type f -name "*.yaml" -exec sed -i "s|\(image: .*/eval-orchestrator\):latest|\1:$SHA|g" {} +
+        # [ĐÃ SỬA] Chỉ còn ép tag cho Data Ingestion và Eval Job
         find k8s/ -type f -name "*.yaml" -exec sed -i "s|\(image: .*/data-ingestion\):latest|\1:$SHA|g" {} +
         find k8s/ -type f -name "*.yaml" -exec sed -i "s|\(image: .*/evaluation-job\):latest|\1:$SHA|g" {} +
-        find k8s/ -type f -name "*.yaml" -exec sed -i "s|\(image: .*/gout-ui\):latest|\1:$SHA|g" {} +
 
     - name: Sync Data ConfigMap
       run: |
@@ -88,8 +87,9 @@ jobs:
 
     - name: Upsert OpenAI secret
       run: |
+        # [ĐÃ SỬA] Đảm bảo dùng khóa in hoa OPENAI_API_KEY
         kubectl create secret generic openai-secret \
-          --from-literal=api-key='${{ secrets.OPENAI_API_KEY }}' \
+          --from-literal=OPENAI_API_KEY='${{ secrets.OPENAI_API_KEY }}' \
           --namespace=${{ env.K8S_NAMESPACE }} \
           --dry-run=client -o yaml | kubectl apply -f -
 
@@ -101,19 +101,32 @@ jobs:
           --namespace=monitoring \
           --dry-run=client -o yaml | kubectl apply -f -
 
-    # === BƯỚC 3: DEPLOY MANIFESTS ===
-    - name: Apply K8s manifests
+    # === BƯỚC 3: DEPLOY MANIFESTS VỚI HELM ===
+    - name: Apply K8s manifests & Helm Charts
       run: |
+        SHA="${{ steps.image_sha.outputs.sha }}"
+        
+        # 1. Các dịch vụ Infrastructure (Giữ nguyên kubectl)
         kubectl apply -f k8s/vector-db/qdrant.yaml
         kubectl apply -f k8s/inference-worker/ollama.yaml
-        kubectl apply -f k8s/eval-orchestrator/deployment.yaml
-        kubectl apply -f k8s/eval-orchestrator/service.yaml
-        kubectl apply -f k8s/eval-orchestrator/service-monitor.yaml
-        kubectl apply -f k8s/ui/deployment.yaml
-        kubectl apply -f k8s/ui/service.yaml
-
+        
         kubectl delete job gout-ingestion-job -n ${{ env.K8S_NAMESPACE }} --ignore-not-found=true
         kubectl apply -f k8s/data-ingestion/job.yaml
+
+        # 2. Triển khai Core Services bằng Helm (Thay thế UI và Orchestrator cũ)
+        helm upgrade --install eval-orchestrator ./helm/gout-service \
+          --namespace ${{ env.K8S_NAMESPACE }} \
+          --set image.repository="${{ env.REGION }}-docker.pkg.dev/${{ env.PROJECT_ID }}/${{ env.REPO_NAME }}/eval-orchestrator" \
+          --set image.tag="$SHA" \
+          --set containerPort=8000 \
+          --set service.port=8000
+
+        helm upgrade --install gout-ui ./helm/gout-service \
+          --namespace ${{ env.K8S_NAMESPACE }} \
+          --set image.repository="${{ env.REGION }}-docker.pkg.dev/${{ env.PROJECT_ID }}/${{ env.REPO_NAME }}/gout-ui" \
+          --set image.tag="$SHA" \
+          --set containerPort=8501 \
+          --set service.port=8501
 
     - name: Wait for eval-orchestrator rollout
       run: kubectl rollout status deployment/eval-orchestrator -n ${{ env.K8S_NAMESPACE }} --timeout=300s
