@@ -101,87 +101,29 @@ jobs:
           --namespace=monitoring \
           --dry-run=client -o yaml | kubectl apply -f -
 
-    # === BƯỚC 3: DEPLOY MANIFESTS VỚI HELM ===
-    - name: Apply K8s manifests & Helm Charts
+# === BƯỚC 3: CẬP NHẬT GITOPS ===
+    - name: Update GitOps Config
       run: |
         SHA="${{ steps.image_sha.outputs.sha }}"
         
-        # 1. Các dịch vụ Infrastructure (Giữ nguyên kubectl)
+        # 1. Các dịch vụ Infrastructure (Giữ nguyên kubectl apply)
         kubectl apply -f k8s/vector-db/qdrant.yaml
         kubectl apply -f k8s/inference-worker/ollama.yaml
         
         kubectl delete job gout-ingestion-job -n ${{ env.K8S_NAMESPACE }} --ignore-not-found=true
         kubectl apply -f k8s/data-ingestion/job.yaml
 
-        # 2. Triển khai Core Services bằng Helm (Thay thế UI và Orchestrator cũ)
-        helm upgrade --install eval-orchestrator ./helm/gout-service \
-          --namespace ${{ env.K8S_NAMESPACE }} \
-          --set image.repository="${{ env.REGION }}-docker.pkg.dev/${{ env.PROJECT_ID }}/${{ env.REPO_NAME }}/eval-orchestrator" \
-          --set image.tag="$SHA" \
-          --set containerPort=8000 \
-          --set service.port=8000
+        # 2. CẬP NHẬT MÃ SHA VÀO FILE HELM VALUES CHO ARGOCD
+        sed -i "s|tag: \".*\"|tag: \"$SHA\"|g" k8s/eval-orchestrator-values.yaml
+        sed -i "s|tag: \".*\"|tag: \"$SHA\"|g" k8s/gout-ui-values.yaml
+        
+        # 3. Ép tag cho các file yaml tĩnh còn lại
+        find k8s/ -type f -name "*.yaml" -exec sed -i "s|\(image: .*/data-ingestion\):latest|\1:$SHA|g" {} +
+        find k8s/ -type f -name "*.yaml" -exec sed -i "s|\(image: .*/evaluation-job\):latest|\1:$SHA|g" {} +
 
-        helm upgrade --install gout-ui ./helm/gout-service \
-          --namespace ${{ env.K8S_NAMESPACE }} \
-          --set image.repository="${{ env.REGION }}-docker.pkg.dev/${{ env.PROJECT_ID }}/${{ env.REPO_NAME }}/gout-ui" \
-          --set image.tag="$SHA" \
-          --set containerPort=8501 \
-          --set service.port=8501
-
-    - name: Wait for eval-orchestrator rollout
-      run: kubectl rollout status deployment/eval-orchestrator -n ${{ env.K8S_NAMESPACE }} --timeout=300s
-
-    # === BƯỚC 4: SMOKE TEST ===
-    - name: Extract Evaluation Config
-      id: eval_config
-      run: |
-        MODEL_NAME=$(awk '/name: EVAL_MODEL_NAME/{getline; sub(/^[[:space:]]*value:[[:space:]]*/, "", $0); print; exit}' k8s/evaluation-job/job.yaml)
-        if [ -z "$MODEL_NAME" ]; then
-          echo "Không tìm thấy EVAL_MODEL_NAME trong k8s/evaluation-job/job.yaml"
-          exit 1
-        fi
-        echo "model_name=$MODEL_NAME" >> "$GITHUB_OUTPUT"
-        echo "Đánh giá model: $MODEL_NAME"
-
-    - name: Wait for Ollama rollout
-      run: kubectl rollout status deployment/ollama-worker -n ${{ env.K8S_NAMESPACE }} --timeout=600s
-
-    - name: Pull Evaluation Model in Ollama
-      run: |
-        echo "Đang tải model ${{ steps.eval_config.outputs.model_name }} vào Ollama..."
-        kubectl exec -n ${{ env.K8S_NAMESPACE }} deployment/ollama-worker -- ollama pull "${{ steps.eval_config.outputs.model_name }}"
-
-    - name: Run Smoke Test (Mini Eval)
-      run: |
-        kubectl delete job evaluation-job -n ${{ env.K8S_NAMESPACE }} --ignore-not-found=true
-
-        echo "⏳ Đang đợi 2 phút để Orchestrator nạp xong Model HuggingFace..."
-        sleep 120
-
-        kubectl apply -f k8s/evaluation-job/job.yaml
-
-        if ! kubectl wait --for=condition=complete job/evaluation-job -n ${{ env.K8S_NAMESPACE }} --timeout=3600s; then
-          echo "Smoke test thất bại cho model ${{ steps.eval_config.outputs.model_name }}!"
-          kubectl logs job/evaluation-job -n ${{ env.K8S_NAMESPACE }} || true
-          exit 1
-        fi
-        echo "Smoke test thành công!"
-        kubectl logs job/evaluation-job -n ${{ env.K8S_NAMESPACE }} || true
-
-    # === BƯỚC 5: UPLOAD KẾT QUẢ ===
-    - name: Collect Evaluation Results
-      if: always()
-      run: |
-        mkdir -p eval-artifacts
-        kubectl logs job/evaluation-job -n ${{ env.K8S_NAMESPACE }} > eval-artifacts/evaluation-log.txt 2>&1 || true
-        echo "commit=${{ steps.image_sha.outputs.sha }}" > eval-artifacts/metadata.txt
-        echo "model=${{ steps.eval_config.outputs.model_name }}" >> eval-artifacts/metadata.txt
-        echo "timestamp=$(date -u +%Y-%m-%dT%H:%M:%SZ)" >> eval-artifacts/metadata.txt
-
-    - name: Upload Evaluation Artifacts
-      if: always()
-      uses: actions/upload-artifact@v4
-      with:
-        name: eval-results-${{ steps.image_sha.outputs.sha }}
-        path: eval-artifacts/
-        retention-days: 30
+        # 4. PUSH NGƯỢC VỀ GIT ĐỂ ARGOCD TỰ SYNC MÀ KHÔNG BỊ ĐÁNH NHAU
+        git config user.email "ci@github.com"
+        git config user.name "GitHub Actions"
+        git add k8s/
+        git commit -m "cd: GitOps update images to $SHA" || echo "No changes to commit"
+        git push origin main
