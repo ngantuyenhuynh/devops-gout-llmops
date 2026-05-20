@@ -10,7 +10,7 @@ spec:
       restartPolicy: Never
       containers:
       - name: evaluation-job
-        image: asia-southeast1-docker.pkg.dev/nt114-q21/gout-llmops-repo/evaluation-job:latest
+        image: asia-southeast1-docker.pkg.dev/nt114-q21/gout-llmops-repo/evaluation-job:a912a5319175f25d293195cc8292236cf31bee0a
         imagePullPolicy: Always
         env:
         - name: ORCHESTRATOR_URL

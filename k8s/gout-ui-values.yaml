@@ -1,6 +1,6 @@
 image:
   repository: asia-southeast1-docker.pkg.dev/nt114-q21/gout-llmops-repo/gout-ui
-  tag: "latest"
+  tag: "a912a5319175f25d293195cc8292236cf31bee0a"
 containerPort: 8501
 service:
   port: 8501

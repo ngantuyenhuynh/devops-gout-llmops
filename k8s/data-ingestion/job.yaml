@@ -9,7 +9,7 @@ spec:
       containers:
       - name: ingestion-container
         # Nhớ thay YOUR_PROJECT_ID bằng nt114-q21
-        image: asia-southeast1-docker.pkg.dev/nt114-q21/gout-llmops-repo/data-ingestion:latest
+        image: asia-southeast1-docker.pkg.dev/nt114-q21/gout-llmops-repo/data-ingestion:a912a5319175f25d293195cc8292236cf31bee0a
         imagePullPolicy: Always
       restartPolicy: OnFailure
   # Tự động xóa Job sau khi chạy xong 100 giây để sạch cụm K8s
