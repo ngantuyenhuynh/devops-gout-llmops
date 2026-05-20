@@ -6,20 +6,12 @@ on:
     paths:
       - 'src/**'
       - 'k8s/**'
-      - '.github/workflows/ci.yaml' # Chỉ kích hoạt khi sửa chính file này
+      - '.github/workflows/ci.yaml'
   pull_request:
     branches: [ "main" ]
-  workflow_dispatch:
-
-env:
-  PROJECT_ID: ${{ vars.PROJECT_ID }}
-  REGION: ${{ vars.GCP_REGION }}
-  REPO_NAME: ${{ vars.REPO_NAME }}
 
 jobs:
-  # ==========================================
-  # JOB 1: QUÉT BẢO MẬT MÃ NGUỒN (CHẠY TRƯỚC)
-  # ==========================================
+  # Vẫn giữ nguyên quét mã nguồn
   security-audit:
     name: "Audit: Repository Security Scan"
     runs-on: ubuntu-latest
@@ -34,213 +26,42 @@ jobs:
           exit-code: '0'
           severity: 'CRITICAL,HIGH'
 
-  # ==========================================
-  # JOB 2: SERVICE - EVAL ORCHESTRATOR
-  # ==========================================
+  # GỌI KHUÔN ĐÚC CHO ORCHESTRATOR
   build-orchestrator:
-    name: "Build: Eval Orchestrator"
     needs: security-audit
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: docker/setup-buildx-action@v3
-      
-      - name: Authenticate to Google Cloud
-        id: auth
-        uses: google-github-actions/auth@v2
-        with:
-          credentials_json: '${{ secrets.GCP_CREDENTIALS }}'
-          token_format: 'access_token'
-          
-      - name: Login to Artifact Registry
-        uses: docker/login-action@v3
-        with:
-          registry: ${{ env.REGION }}-docker.pkg.dev
-          username: oauth2accesstoken
-          password: ${{ steps.auth.outputs.access_token }}
-      
-      - name: Build & Load
-        uses: docker/build-push-action@v5
-        with:
-          context: ./src/eval-orchestrator
-          load: true
-          tags: eval-orchestrator:test
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
+    uses: ./.github/workflows/reusable-build.yaml
+    with:
+      service_name: "eval-orchestrator"
+      build_context: "./src/eval-orchestrator"
+      dockerfile_path: "./src/eval-orchestrator/Dockerfile"
+    secrets: inherit # Tự động truyền toàn bộ secret xuống cho khuôn
 
-      - name: Scan Image
-        uses: aquasecurity/trivy-action@master
-        with:
-          image-ref: 'eval-orchestrator:test'
-          format: 'table'
-          exit-code: '0'
-          severity: 'CRITICAL,HIGH'
-
-      - name: Push to Artifact Registry
-        run: |
-          IMAGE_PATH=${{ env.REGION }}-docker.pkg.dev/${{ env.PROJECT_ID }}/${{ env.REPO_NAME }}/eval-orchestrator
-          docker tag eval-orchestrator:test $IMAGE_PATH:${{ github.sha }}
-          docker push $IMAGE_PATH:${{ github.sha }}
-          if [ "${{ github.ref }}" = "refs/heads/main" ]; then
-            docker tag eval-orchestrator:test $IMAGE_PATH:latest
-            docker push $IMAGE_PATH:latest
-          fi
-
-  # ==========================================
-  # JOB 3: SERVICE - DATA INGESTION
-  # ==========================================
-  build-ingestion:
-    name: "Build: Data Ingestion"
-    needs: security-audit
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: docker/setup-buildx-action@v3
-      
-      - name: Authenticate to Google Cloud
-        id: auth
-        uses: google-github-actions/auth@v2
-        with:
-          credentials_json: '${{ secrets.GCP_CREDENTIALS }}'
-          token_format: 'access_token'
-          
-      - name: Login to Artifact Registry
-        uses: docker/login-action@v3
-        with:
-          registry: ${{ env.REGION }}-docker.pkg.dev
-          username: oauth2accesstoken
-          password: ${{ steps.auth.outputs.access_token }}
-      
-      - name: Build & Load
-        uses: docker/build-push-action@v5
-        with:
-          context: .
-          file: src/data-ingestion/Dockerfile
-          load: true
-          tags: data-ingestion:test
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
-
-      - name: Scan Image
-        uses: aquasecurity/trivy-action@master
-        with:
-          image-ref: 'data-ingestion:test'
-          format: 'table'
-          exit-code: '0'
-          severity: 'CRITICAL'
-
-      - name: Push to Artifact Registry
-        run: |
-          IMAGE_PATH=${{ env.REGION }}-docker.pkg.dev/${{ env.PROJECT_ID }}/${{ env.REPO_NAME }}/data-ingestion
-          docker tag data-ingestion:test $IMAGE_PATH:${{ github.sha }}
-          docker push $IMAGE_PATH:${{ github.sha }}
-          if [ "${{ github.ref }}" = "refs/heads/main" ]; then
-            docker tag data-ingestion:test $IMAGE_PATH:latest
-            docker push $IMAGE_PATH:latest
-          fi
-
-  # ==========================================
-  # JOB 4: SERVICE - EVALUATION JOB
-  # ==========================================
-  build-eval-job:
-    name: "Build: Evaluation Job"
-    needs: security-audit
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: docker/setup-buildx-action@v3
-      
-      - name: Authenticate to Google Cloud
-        id: auth
-        uses: google-github-actions/auth@v2
-        with:
-          credentials_json: '${{ secrets.GCP_CREDENTIALS }}'
-          token_format: 'access_token'
-          
-      - name: Login to Artifact Registry
-        uses: docker/login-action@v3
-        with:
-          registry: ${{ env.REGION }}-docker.pkg.dev
-          username: oauth2accesstoken
-          password: ${{ steps.auth.outputs.access_token }}
-      
-      - name: Build & Load
-        uses: docker/build-push-action@v5
-        with:
-          context: .
-          file: src/evaluation-job/Dockerfile
-          load: true
-          tags: evaluation-job:test
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
-
-      - name: Scan Image
-        uses: aquasecurity/trivy-action@master
-        with:
-          image-ref: 'evaluation-job:test'
-          format: 'table'
-          exit-code: '0'
-          severity: 'CRITICAL,HIGH'
-
-      - name: Push to Artifact Registry
-        run: |
-          IMAGE_PATH=${{ env.REGION }}-docker.pkg.dev/${{ env.PROJECT_ID }}/${{ env.REPO_NAME }}/evaluation-job
-          docker tag evaluation-job:test $IMAGE_PATH:${{ github.sha }}
-          docker push $IMAGE_PATH:${{ github.sha }}
-          if [ "${{ github.ref }}" = "refs/heads/main" ]; then
-            docker tag evaluation-job:test $IMAGE_PATH:latest
-            docker push $IMAGE_PATH:latest
-          fi
-
-  # ==========================================
-  # JOB 5: SERVICE - STREAMLIT UI
-  # ==========================================
+  # GỌI KHUÔN ĐÚC CHO UI
   build-ui:
-    name: "Build: Streamlit UI"
     needs: security-audit
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: docker/setup-buildx-action@v3
-      
-      - name: Authenticate to Google Cloud
-        id: auth
-        uses: google-github-actions/auth@v2
-        with:
-          credentials_json: '${{ secrets.GCP_CREDENTIALS }}'
-          token_format: 'access_token'
-          
-      - name: Login to Artifact Registry
-        uses: docker/login-action@v3
-        with:
-          registry: ${{ env.REGION }}-docker.pkg.dev
-          username: oauth2accesstoken
-          password: ${{ steps.auth.outputs.access_token }}
-      
-      - name: Build & Load
-        uses: docker/build-push-action@v5
-        with:
-          context: ./src/ui
-          file: ./src/ui/Dockerfile
-          load: true
-          tags: gout-ui:test
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
+    uses: ./.github/workflows/reusable-build.yaml
+    with:
+      service_name: "gout-ui"
+      build_context: "./src/ui"
+      dockerfile_path: "./src/ui/Dockerfile"
+    secrets: inherit
 
-      - name: Scan Image
-        uses: aquasecurity/trivy-action@master
-        with:
-          image-ref: 'gout-ui:test'
-          format: 'table'
-          exit-code: '0'
-          severity: 'CRITICAL,HIGH'
+  # GỌI KHUÔN ĐÚC CHO INGESTION
+  build-ingestion:
+    needs: security-audit
+    uses: ./.github/workflows/reusable-build.yaml
+    with:
+      service_name: "data-ingestion"
+      build_context: "."
+      dockerfile_path: "./src/data-ingestion/Dockerfile"
+    secrets: inherit
 
-      - name: Push to Artifact Registry
-        run: |
-          IMAGE_PATH=${{ env.REGION }}-docker.pkg.dev/${{ env.PROJECT_ID }}/${{ env.REPO_NAME }}/gout-ui
-          docker tag gout-ui:test $IMAGE_PATH:${{ github.sha }}
-          docker push $IMAGE_PATH:${{ github.sha }}
-          if [ "${{ github.ref }}" = "refs/heads/main" ]; then
-            docker tag gout-ui:test $IMAGE_PATH:latest
-            docker push $IMAGE_PATH:latest
-          fi
+  # GỌI KHUÔN ĐÚC CHO EVAL JOB
+  build-eval-job:
+    needs: security-audit
+    uses: ./.github/workflows/reusable-build.yaml
+    with:
+      service_name: "evaluation-job"
+      build_context: "."
+      dockerfile_path: "./src/evaluation-job/Dockerfile"
+    secrets: inherit
