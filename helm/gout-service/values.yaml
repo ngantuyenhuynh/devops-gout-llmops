@@ -12,4 +12,7 @@ service:
 containerPort: 8000
 
 env: {}
-  # Biến môi trường sẽ được truyền vào đây nếu có
+envFromSecrets: []
+
+monitoring:
+  enabled: false
