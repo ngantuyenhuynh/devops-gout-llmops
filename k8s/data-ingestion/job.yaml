@@ -11,7 +11,7 @@ spec:
       containers:
       - name: ingestion-container
         # Nhớ thay YOUR_PROJECT_ID bằng macro-mender-494903-v0
-        image: asia-southeast1-docker.pkg.dev/macro-mender-494903-v0/gout-llmops-repo/data-ingestion:dc8b5d16803878a045847d8fd58f42e51cd8196a
+        image: asia-southeast1-docker.pkg.dev/macro-mender-494903-v0/gout-llmops-repo/data-ingestion:3acf8fe4339d8b683ee005994b01a26bca3e29a1
         imagePullPolicy: Always
       restartPolicy: OnFailure
   # Tự động xóa Job sau khi chạy xong 100 giây để sạch cụm K8s

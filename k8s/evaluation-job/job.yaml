@@ -12,13 +12,13 @@ spec:
       - name: artifact-registry-key
       containers:
       - name: evaluation-job
-        image: asia-southeast1-docker.pkg.dev/macro-mender-494903-v0/gout-llmops-repo/evaluation-job:dc8b5d16803878a045847d8fd58f42e51cd8196a
+        image: asia-southeast1-docker.pkg.dev/macro-mender-494903-v0/gout-llmops-repo/evaluation-job:3acf8fe4339d8b683ee005994b01a26bca3e29a1
         imagePullPolicy: Always
         env:
         - name: ORCHESTRATOR_URL
           value: http://eval-orchestrator-service.gout-eval.svc.cluster.local:8000/ask
         - name: TESTSET_PATH
-          value: /app/data/gout_test_cases.json
+          value: /app/data/gout_test_cases_mini.json
         - name: REQUEST_TIMEOUT
           value: "None"
         - name: JUDGE_MODEL
