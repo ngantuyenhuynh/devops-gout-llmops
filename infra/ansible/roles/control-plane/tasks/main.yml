@@ -7,6 +7,23 @@
   args:
     creates: /etc/kubernetes/admin.conf
 
+# Nếu cluster đã tồn tại nhưng cert thiếu external IP, regenerate
+- name: Check if external IP is in API server cert SANs
+  shell: openssl x509 -in /etc/kubernetes/pki/apiserver.crt -noout -text | grep -q {{ ansible_host }}
+  register: cert_check
+  failed_when: false
+  changed_when: false
+
+- name: Regenerate API server cert with external IP if missing
+  shell: |
+    rm /etc/kubernetes/pki/apiserver.crt /etc/kubernetes/pki/apiserver.key
+    kubeadm init phase certs apiserver \
+      --apiserver-advertise-address={{ ansible_default_ipv4.address }} \
+      --apiserver-cert-extra-sans={{ ansible_host }}
+    crictl rm $(crictl ps -a --name kube-apiserver -q)
+    sleep 15
+  when: cert_check.rc != 0
+
 - name: Set up kubectl for root
   shell: |
     mkdir -p $HOME/.kube
