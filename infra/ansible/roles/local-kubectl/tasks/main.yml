@@ -1,3 +1,12 @@
+- name: Install kubectl
+  shell: |
+    curl -LO "https://dl.k8s.io/release/$(curl -Ls https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl"
+    install -m 0755 kubectl /usr/local/bin/kubectl
+    rm kubectl
+  args:
+    creates: /usr/local/bin/kubectl
+  become: true
+
 - name: Create ~/.kube directory
   file:
     path: "{{ lookup('env', 'HOME') }}/.kube"
