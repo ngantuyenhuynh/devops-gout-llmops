@@ -2,7 +2,7 @@ name: "CI: Build, Scan & Push Services"
 
 on:
   push:
-    branches: [ "main", "dev" ]
+    branches: [ "main" ]
     paths:
       - 'src/**'
       - 'k8s/**'
