@@ -10,6 +10,13 @@
   shell: kubectl apply -f {{ repo_root }}/k8s/argocd-apps/
   changed_when: true
 
+- name: Wait for AlertmanagerConfig CRD to be established
+  shell: kubectl wait --for=condition=Established crd/alertmanagerconfigs.monitoring.coreos.com --timeout=120s
+  retries: 5
+  delay: 15
+  register: crd_wait
+  until: crd_wait.rc == 0
+
 - name: Apply AlertmanagerConfig
   shell: kubectl apply -f {{ repo_root }}/k8s/alertmanager-config.yaml
   changed_when: true
