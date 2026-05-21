@@ -1,3 +1,9 @@
+- name: Create ~/.kube directory
+  file:
+    path: "{{ lookup('env', 'HOME') }}/.kube"
+    state: directory
+    mode: "0755"
+
 - name: Install kubeconfig to ~/.kube/config
   copy:
     src: /tmp/kubeconfig
