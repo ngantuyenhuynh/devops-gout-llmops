@@ -1,11 +1,28 @@
 ---
-- name: Bootstrap GKE cluster for gout-llmops
+- name: Install common K8s prerequisites on all nodes
+  hosts: all
+  become: true
+  roles:
+    - common
+
+- name: Initialize control plane on vm1
+  hosts: control_plane
+  become: true
+  roles:
+    - control-plane
+
+- name: Join worker nodes (vm2, vm3)
+  hosts: workers
+  become: true
+  roles:
+    - worker
+
+- name: Configure local kubectl + deploy apps
   hosts: localhost
   connection: local
   gather_facts: false
-
   roles:
-    - role: gke-auth
-    - role: namespaces
-    - role: argocd
-    - role: argocd-apps
+    - local-kubectl
+    - namespaces
+    - argocd
+    - argocd-apps

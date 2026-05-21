@@ -1,6 +1,0 @@
-- name: Get GKE credentials
-  shell: >
-    gcloud container clusters get-credentials {{ cluster_name }}
-    --region {{ region }}
-    --project {{ project_id }}
-  changed_when: true

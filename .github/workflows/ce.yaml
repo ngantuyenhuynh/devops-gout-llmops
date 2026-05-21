@@ -11,8 +11,6 @@ env:
   PROJECT_ID: ${{ vars.PROJECT_ID }}
   REGION: ${{ vars.GCP_REGION }}
   REPO_NAME: ${{ vars.REPO_NAME }}
-  GKE_CLUSTER: ${{ vars.GKE_CLUSTER }}
-  GKE_LOCATION: ${{ vars.GKE_LOCATION }}
   K8S_NAMESPACE: "gout-eval"
 
 jobs:
@@ -56,11 +54,11 @@ jobs:
       # ==========================================
       # BƯỚC 2: KẾT NỐI GKE VÀ KÍCH HOẠT CHẤM ĐIỂM
       # ==========================================
-      - name: Authenticate to GKE
-        uses: google-github-actions/get-gke-credentials@v2
-        with:
-          cluster_name: ${{ env.GKE_CLUSTER }}
-          location: ${{ env.GKE_LOCATION }}
+      - name: Setup kubectl
+        run: |
+          mkdir -p ~/.kube
+          echo "${{ secrets.KUBECONFIG_B64 }}" | base64 -d > ~/.kube/config
+          chmod 600 ~/.kube/config
 
       - name: Update evaluation-job image SHA
         run: |

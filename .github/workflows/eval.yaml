@@ -16,8 +16,6 @@ concurrency:
 
 env:
   REGION: ${{ vars.GCP_REGION }}
-  GKE_CLUSTER: ${{ vars.GKE_CLUSTER }}
-  GKE_LOCATION: ${{ vars.GKE_LOCATION }}
   K8S_NAMESPACE: ${{ vars.K8S_NAMESPACE }}
   EVALUATION_JOB_NAME: evaluation-job
   FULL_TESTSET_PATH: /app/data/gout_test_cases.json
@@ -35,29 +33,24 @@ jobs:
       - name: Validate required configuration
         run: |
           missing=""
-          for var_name in REGION GKE_CLUSTER GKE_LOCATION K8S_NAMESPACE; do
+          for var_name in REGION K8S_NAMESPACE; do
             if [ -z "${!var_name}" ]; then
               missing="$missing $var_name"
             fi
           done
-          if [ -z "${{ secrets.GCP_CREDENTIALS }}" ]; then
-            missing="$missing GCP_CREDENTIALS(secret)"
+          if [ -z "${{ secrets.KUBECONFIG_B64 }}" ]; then
+            missing="$missing KUBECONFIG_B64(secret)"
           fi
           if [ -n "$missing" ]; then
             echo "Missing required GitHub Variables/Secrets:$missing"
             exit 1
           fi
 
-      - name: Authenticate to Google Cloud
-        uses: google-github-actions/auth@v2
-        with:
-          credentials_json: '${{ secrets.GCP_CREDENTIALS }}'
-
-      - name: Get GKE credentials
-        uses: google-github-actions/get-gke-credentials@v2
-        with:
-          cluster_name: ${{ env.GKE_CLUSTER }}
-          location: ${{ env.GKE_LOCATION }}
+      - name: Setup kubectl
+        run: |
+          mkdir -p ~/.kube
+          echo "${{ secrets.KUBECONFIG_B64 }}" | base64 -d > ~/.kube/config
+          chmod 600 ~/.kube/config
 
       - name: Pull Evaluation Model in Ollama
         run: |

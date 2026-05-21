@@ -11,8 +11,6 @@ env:
   PROJECT_ID: ${{ vars.PROJECT_ID }}
   REGION: ${{ vars.GCP_REGION }}
   REPO_NAME: ${{ vars.REPO_NAME }}
-  GKE_CLUSTER: ${{ vars.GKE_CLUSTER }}
-  GKE_LOCATION: ${{ vars.GKE_LOCATION }}
   K8S_NAMESPACE: ${{ vars.K8S_NAMESPACE }}
 
 concurrency:
@@ -33,16 +31,11 @@ jobs:
     - name: Checkout code
       uses: actions/checkout@v4
 
-    - name: Authenticate to Google Cloud
-      uses: google-github-actions/auth@v2
-      with:
-        credentials_json: '${{ secrets.GCP_CREDENTIALS }}'
-
-    - name: Get GKE credentials
-      uses: google-github-actions/get-gke-credentials@v2
-      with:
-        cluster_name: ${{ env.GKE_CLUSTER }}
-        location: ${{ env.GKE_LOCATION }}
+    - name: Setup kubectl
+      run: |
+        mkdir -p ~/.kube
+        echo "${{ secrets.KUBECONFIG_B64 }}" | base64 -d > ~/.kube/config
+        chmod 600 ~/.kube/config
 
     # === BƯỚC 1: CHUẨN BỊ TRIỂN KHAI ===
     - name: Detect Evaluation Testset
@@ -82,6 +75,17 @@ jobs:
           --dry-run=client -o yaml | kubectl replace --force -f -
 
     # === BƯỚC 2: UPSERT SECRETS ===
+    - name: Upsert imagePullSecret for Artifact Registry
+      run: |
+        for ns in ${{ env.K8S_NAMESPACE }} monitoring; do
+          kubectl create secret docker-registry artifact-registry-key \
+            --docker-server=${{ env.REGION }}-docker.pkg.dev \
+            --docker-username=_json_key \
+            --docker-password='${{ secrets.GCP_SA_KEY }}' \
+            --namespace=$ns \
+            --dry-run=client -o yaml | kubectl apply -f -
+        done
+
     - name: Upsert Langfuse secret
       run: |
         kubectl create secret generic langfuse-secret \

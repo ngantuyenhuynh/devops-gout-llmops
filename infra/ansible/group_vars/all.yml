@@ -1,6 +1,5 @@
-project_id: "{{ lookup('env', 'PROJECT_ID') }}"
-region: "asia-southeast1"
-cluster_name: "gout-llmops-cluster"
+k8s_version: "1.32"
+pod_cidr: "10.244.0.0/16"
 
 argocd_version: "v2.11.3"
 argocd_namespace: "argocd"
