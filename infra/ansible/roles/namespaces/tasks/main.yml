@@ -1,0 +1,4 @@
+- name: Create namespaces
+  shell: kubectl create namespace {{ item }} --dry-run=client -o yaml | kubectl apply -f -
+  loop: "{{ namespaces }}"
+  changed_when: true

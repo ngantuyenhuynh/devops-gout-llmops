@@ -1,0 +1,14 @@
+project_id: "{{ lookup('env', 'PROJECT_ID') }}"
+region: "asia-southeast1"
+zone: "asia-southeast1-a"
+cluster_name: "gout-llmops-cluster"
+
+argocd_version: "v2.11.3"
+argocd_namespace: "argocd"
+
+namespaces:
+  - gout-eval
+  - monitoring
+  - argocd
+
+repo_root: "{{ playbook_dir }}/../.."

@@ -1,0 +1,19 @@
+- name: Apply ArgoCD manifests
+  shell: >
+    kubectl apply -n {{ argocd_namespace }}
+    -f https://raw.githubusercontent.com/argoproj/argo-cd/{{ argocd_version }}/manifests/install.yaml
+  changed_when: true
+
+- name: Wait for ArgoCD server to be ready
+  shell: kubectl rollout status deployment/argocd-server -n {{ argocd_namespace }} --timeout=300s
+  changed_when: false
+
+- name: Wait for ArgoCD application-controller to be ready
+  shell: kubectl rollout status statefulset/argocd-application-controller -n {{ argocd_namespace }} --timeout=300s
+  changed_when: false
+
+- name: Patch ArgoCD server service to LoadBalancer
+  shell: >
+    kubectl patch svc argocd-server -n {{ argocd_namespace }}
+    -p '{"spec": {"type": "LoadBalancer"}}'
+  changed_when: true

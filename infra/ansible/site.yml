@@ -1,0 +1,11 @@
+---
+- name: Bootstrap GKE cluster for gout-llmops
+  hosts: localhost
+  connection: local
+  gather_facts: false
+
+  roles:
+    - role: gke-auth
+    - role: namespaces
+    - role: argocd
+    - role: argocd-apps
