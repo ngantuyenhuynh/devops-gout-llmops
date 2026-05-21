@@ -1,0 +1,137 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: gout-llmops-aio-dashboard
+  namespace: monitoring
+  labels:
+    grafana_dashboard: "1"
+data:
+  gout-llmops-aio.json: |
+    {
+      "title": "Gout LLMOps - AIO",
+      "uid": "gout-llmops-aio",
+      "tags": ["kubernetes", "llmops"],
+      "timezone": "browser",
+      "refresh": "30s",
+      "schemaVersion": 38,
+      "graphTooltip": 1,
+      "time": { "from": "now-1h", "to": "now" },
+      "panels": [
+        { "type": "row", "title": "Cluster Overview", "collapsed": false, "gridPos": { "h": 1, "w": 24, "x": 0, "y": 0 }, "id": 1 },
+        {
+          "id": 2, "type": "stat", "title": "Nodes Ready",
+          "gridPos": { "h": 4, "w": 6, "x": 0, "y": 1 },
+          "datasource": { "type": "prometheus", "uid": "prometheus" },
+          "options": { "colorMode": "background", "graphMode": "none", "reduceOptions": { "calcs": ["lastNotNull"] } },
+          "fieldConfig": { "defaults": { "unit": "short", "thresholds": { "mode": "absolute", "steps": [{ "color": "red", "value": null }, { "color": "green", "value": 3 }] } } },
+          "targets": [{ "expr": "count(kube_node_status_condition{condition=\"Ready\",status=\"true\"})", "legendFormat": "Ready" }]
+        },
+        {
+          "id": 3, "type": "stat", "title": "Pods Running (gout-eval)",
+          "gridPos": { "h": 4, "w": 6, "x": 6, "y": 1 },
+          "datasource": { "type": "prometheus", "uid": "prometheus" },
+          "options": { "colorMode": "background", "graphMode": "none", "reduceOptions": { "calcs": ["lastNotNull"] } },
+          "fieldConfig": { "defaults": { "unit": "short", "thresholds": { "mode": "absolute", "steps": [{ "color": "orange", "value": null }, { "color": "green", "value": 3 }] } } },
+          "targets": [{ "expr": "count(kube_pod_status_phase{namespace=\"gout-eval\",phase=\"Running\"})", "legendFormat": "Running" }]
+        },
+        {
+          "id": 4, "type": "stat", "title": "Cluster CPU Usage",
+          "gridPos": { "h": 4, "w": 6, "x": 12, "y": 1 },
+          "datasource": { "type": "prometheus", "uid": "prometheus" },
+          "options": { "colorMode": "background", "graphMode": "area", "reduceOptions": { "calcs": ["lastNotNull"] } },
+          "fieldConfig": { "defaults": { "unit": "percentunit", "thresholds": { "mode": "absolute", "steps": [{ "color": "green", "value": null }, { "color": "orange", "value": 0.7 }, { "color": "red", "value": 0.9 }] } } },
+          "targets": [{ "expr": "1 - avg(rate(node_cpu_seconds_total{mode=\"idle\"}[5m]))", "legendFormat": "CPU" }]
+        },
+        {
+          "id": 5, "type": "stat", "title": "Cluster Memory Usage",
+          "gridPos": { "h": 4, "w": 6, "x": 18, "y": 1 },
+          "datasource": { "type": "prometheus", "uid": "prometheus" },
+          "options": { "colorMode": "background", "graphMode": "area", "reduceOptions": { "calcs": ["lastNotNull"] } },
+          "fieldConfig": { "defaults": { "unit": "percentunit", "thresholds": { "mode": "absolute", "steps": [{ "color": "green", "value": null }, { "color": "orange", "value": 0.7 }, { "color": "red", "value": 0.9 }] } } },
+          "targets": [{ "expr": "1 - sum(node_memory_MemAvailable_bytes) / sum(node_memory_MemTotal_bytes)", "legendFormat": "Memory" }]
+        },
+
+        { "type": "row", "title": "Node Resources", "collapsed": false, "gridPos": { "h": 1, "w": 24, "x": 0, "y": 5 }, "id": 10 },
+        {
+          "id": 11, "type": "timeseries", "title": "CPU per Node",
+          "gridPos": { "h": 8, "w": 12, "x": 0, "y": 6 },
+          "datasource": { "type": "prometheus", "uid": "prometheus" },
+          "fieldConfig": { "defaults": { "unit": "percentunit", "min": 0, "max": 1 } },
+          "targets": [{ "expr": "1 - avg by(instance) (rate(node_cpu_seconds_total{mode=\"idle\"}[5m]))", "legendFormat": "{{instance}}" }]
+        },
+        {
+          "id": 12, "type": "timeseries", "title": "Memory per Node",
+          "gridPos": { "h": 8, "w": 12, "x": 12, "y": 6 },
+          "datasource": { "type": "prometheus", "uid": "prometheus" },
+          "fieldConfig": { "defaults": { "unit": "percentunit", "min": 0, "max": 1 } },
+          "targets": [{ "expr": "1 - node_memory_MemAvailable_bytes / node_memory_MemTotal_bytes", "legendFormat": "{{instance}}" }]
+        },
+
+        { "type": "row", "title": "gout-eval Applications", "collapsed": false, "gridPos": { "h": 1, "w": 24, "x": 0, "y": 14 }, "id": 20 },
+        {
+          "id": 21, "type": "table", "title": "Pod Status",
+          "gridPos": { "h": 6, "w": 24, "x": 0, "y": 15 },
+          "datasource": { "type": "prometheus", "uid": "prometheus" },
+          "options": { "sortBy": [{ "displayName": "Pod" }] },
+          "transformations": [{ "id": "organize", "options": { "renameByName": { "pod": "Pod", "Value": "Restarts (1h)" } } }],
+          "targets": [
+            {
+              "expr": "sum by(pod) (increase(kube_pod_container_status_restarts_total{namespace=\"gout-eval\"}[1h]))",
+              "legendFormat": "{{pod}}",
+              "instant": true,
+              "refId": "A"
+            }
+          ]
+        },
+        {
+          "id": 22, "type": "timeseries", "title": "CPU per Pod (gout-eval)",
+          "gridPos": { "h": 8, "w": 12, "x": 0, "y": 21 },
+          "datasource": { "type": "prometheus", "uid": "prometheus" },
+          "fieldConfig": { "defaults": { "unit": "cores" } },
+          "targets": [{ "expr": "sum by(pod) (rate(container_cpu_usage_seconds_total{namespace=\"gout-eval\",container!=\"\",container!=\"POD\"}[5m]))", "legendFormat": "{{pod}}" }]
+        },
+        {
+          "id": 23, "type": "timeseries", "title": "Memory per Pod (gout-eval)",
+          "gridPos": { "h": 8, "w": 12, "x": 12, "y": 21 },
+          "datasource": { "type": "prometheus", "uid": "prometheus" },
+          "fieldConfig": { "defaults": { "unit": "bytes" } },
+          "targets": [{ "expr": "sum by(pod) (container_memory_working_set_bytes{namespace=\"gout-eval\",container!=\"\",container!=\"POD\"})", "legendFormat": "{{pod}}" }]
+        },
+
+        { "type": "row", "title": "Jobs", "collapsed": false, "gridPos": { "h": 1, "w": 24, "x": 0, "y": 29 }, "id": 30 },
+        {
+          "id": 31, "type": "stat", "title": "Ingestion Job - Last Status",
+          "gridPos": { "h": 4, "w": 8, "x": 0, "y": 30 },
+          "datasource": { "type": "prometheus", "uid": "prometheus" },
+          "options": { "colorMode": "background", "graphMode": "none", "reduceOptions": { "calcs": ["lastNotNull"] }, "textMode": "value_and_name" },
+          "fieldConfig": { "defaults": { "unit": "short", "mappings": [{ "type": "value", "options": { "1": { "text": "Success", "color": "green" }, "0": { "text": "Failed", "color": "red" } } }] } },
+          "targets": [{ "expr": "max by(job_name) (kube_job_status_succeeded{namespace=\"gout-eval\",job_name=~\"gout-ingestion-job.*\"})", "legendFormat": "{{job_name}}" }]
+        },
+        {
+          "id": 32, "type": "stat", "title": "Evaluation Job - Last Status",
+          "gridPos": { "h": 4, "w": 8, "x": 8, "y": 30 },
+          "datasource": { "type": "prometheus", "uid": "prometheus" },
+          "options": { "colorMode": "background", "graphMode": "none", "reduceOptions": { "calcs": ["lastNotNull"] }, "textMode": "value_and_name" },
+          "fieldConfig": { "defaults": { "unit": "short", "mappings": [{ "type": "value", "options": { "1": { "text": "Success", "color": "green" }, "0": { "text": "Failed", "color": "red" } } }] } },
+          "targets": [{ "expr": "max by(job_name) (kube_job_status_succeeded{namespace=\"gout-eval\",job_name=~\"evaluation-job.*\"})", "legendFormat": "{{job_name}}" }]
+        },
+        {
+          "id": 33, "type": "stat", "title": "Evaluation Job - Duration",
+          "gridPos": { "h": 4, "w": 8, "x": 16, "y": 30 },
+          "datasource": { "type": "prometheus", "uid": "prometheus" },
+          "options": { "colorMode": "value", "graphMode": "none", "reduceOptions": { "calcs": ["lastNotNull"] } },
+          "fieldConfig": { "defaults": { "unit": "s" } },
+          "targets": [{ "expr": "max(kube_job_status_completion_time{namespace=\"gout-eval\",job_name=~\"evaluation-job.*\"}) - max(kube_job_status_start_time{namespace=\"gout-eval\",job_name=~\"evaluation-job.*\"})", "legendFormat": "Duration" }]
+        },
+        {
+          "id": 34, "type": "timeseries", "title": "Job Duration History",
+          "gridPos": { "h": 8, "w": 24, "x": 0, "y": 34 },
+          "datasource": { "type": "prometheus", "uid": "prometheus" },
+          "fieldConfig": { "defaults": { "unit": "s" } },
+          "targets": [
+            { "expr": "kube_job_status_completion_time{namespace=\"gout-eval\",job_name=~\"gout-ingestion-job.*\"} - kube_job_status_start_time{namespace=\"gout-eval\",job_name=~\"gout-ingestion-job.*\"}", "legendFormat": "Ingestion - {{job_name}}" },
+            { "expr": "kube_job_status_completion_time{namespace=\"gout-eval\",job_name=~\"evaluation-job.*\"} - kube_job_status_start_time{namespace=\"gout-eval\",job_name=~\"evaluation-job.*\"}", "legendFormat": "Evaluation - {{job_name}}" }
+          ]
+        }
+      ]
+    }
