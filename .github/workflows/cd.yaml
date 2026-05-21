@@ -127,8 +127,8 @@ jobs:
         # 3. PUSH NGƯỢC VỀ GIT ĐỂ ARGOCD TỰ SYNC — [skip ci] tránh vòng lặp CI/CD
         git config user.email "ci@github.com"
         git config user.name "GitHub Actions"
-        git add k8s/
         git pull --rebase origin main
+        git add k8s/
         git commit -m "cd: GitOps update images to $SHA [skip ci]" || echo "No changes to commit"
         git push origin main
 
@@ -151,6 +151,11 @@ jobs:
       run: |
         echo "Đang tải model ${{ steps.eval_config.outputs.model_name }} vào Ollama..."
         kubectl exec -n ${{ env.K8S_NAMESPACE }} deployment/ollama-worker -- ollama pull "${{ steps.eval_config.outputs.model_name }}"
+
+    - name: Wait for Data Ingestion Job
+      run: |
+        kubectl wait --for=condition=complete job/gout-ingestion-job \
+          -n ${{ env.K8S_NAMESPACE }} --timeout=600s
 
     - name: Run Smoke Test (Mini Eval)
       run: |
