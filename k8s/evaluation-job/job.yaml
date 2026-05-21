@@ -24,7 +24,7 @@ spec:
         - name: JUDGE_MODEL
           value: gpt-4o-mini
         - name: EVAL_MODEL_NAME
-          value: qwen2.5:3b
+          value: qwen2.5:1.5b
         - name: QUALITY_GATE_FAITHFULNESS_MIN
           value: "0.40"
         - name: QUALITY_GATE_COMPLETENESS_MIN
