@@ -117,8 +117,8 @@ jobs:
         kubectl apply -f k8s/vector-db/qdrant.yaml
         kubectl apply -f k8s/inference-worker/ollama.yaml
         
-        kubectl delete job gout-ingestion-job -n ${{ env.K8S_NAMESPACE }} --ignore-not-found=true
-        kubectl apply -f k8s/data-ingestion/job.yaml
+        kubectl replace --force -f k8s/data-ingestion/job.yaml 2>/dev/null || \
+          kubectl apply -f k8s/data-ingestion/job.yaml
 
         # 2. Patch testset path nếu có thay đổi
         TESTSET_PATH="${{ steps.eval_testset.outputs.testset_path }}"
@@ -159,8 +159,8 @@ jobs:
 
     - name: Run Smoke Test (Mini Eval)
       run: |
-        kubectl delete job evaluation-job -n ${{ env.K8S_NAMESPACE }} --ignore-not-found=true
-        kubectl apply -f k8s/evaluation-job/job.yaml
+        kubectl replace --force -f k8s/evaluation-job/job.yaml 2>/dev/null || \
+          kubectl apply -f k8s/evaluation-job/job.yaml
 
         if ! kubectl wait --for=condition=complete job/evaluation-job -n ${{ env.K8S_NAMESPACE }} --timeout=3600s; then
           echo "Smoke test thất bại cho model ${{ steps.eval_config.outputs.model_name }}!"
