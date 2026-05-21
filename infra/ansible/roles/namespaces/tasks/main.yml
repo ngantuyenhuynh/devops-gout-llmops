@@ -3,8 +3,12 @@
   loop: "{{ namespaces }}"
   changed_when: true
 
-# Cho phép các namespace pull image từ GCP Artifact Registry
-- name: Create imagePullSecret in each namespace
+- name: Validate GCP SA key is provided
+  fail:
+    msg: "Thiếu biến gcp_sa_key. Chạy lại với: ansible-playbook ... -e gcp_sa_key=$(cat ~/sa-ansible-key.json)"
+  when: gcp_sa_key is not defined or gcp_sa_key == ''
+
+- name: Create imagePullSecret for Artifact Registry in each namespace
   shell: >
     kubectl create secret docker-registry artifact-registry-key
     --docker-server={{ gcp_region }}-docker.pkg.dev
@@ -14,6 +18,4 @@
     --dry-run=client -o yaml | kubectl apply -f -
   loop: "{{ namespaces }}"
   changed_when: true
-  vars:
-    gcp_region: "{{ lookup('env', 'GCP_REGION') | default('asia-southeast1') }}"
-    gcp_sa_key: "{{ lookup('env', 'GCP_SA_KEY') }}"
+  no_log: true

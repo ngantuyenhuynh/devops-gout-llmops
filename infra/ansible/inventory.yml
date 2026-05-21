@@ -8,10 +8,10 @@ all:
     control_plane:
       hosts:
         vm1:
-          ansible_host: FILL_FROM_TERRAFORM_OUTPUT
+          ansible_host: 34.87.166.195
     workers:
       hosts:
         vm2:
-          ansible_host: FILL_FROM_TERRAFORM_OUTPUT
+          ansible_host: 34.87.8.250
         vm3:
-          ansible_host: FILL_FROM_TERRAFORM_OUTPUT
+          ansible_host: 34.142.242.35
