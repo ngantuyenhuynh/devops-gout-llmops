@@ -1,7 +1,7 @@
 replicaCount: 1
 
 image:
-  repository: asia-southeast1-docker.pkg.dev/nt114-q21/gout-llmops-repo/default-service
+  repository: asia-southeast1-docker.pkg.dev/macro-mender-494903-v0/gout-llmops-repo/default-service
   tag: "latest"
   pullPolicy: Always
 
