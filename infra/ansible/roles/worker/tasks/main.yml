@@ -1,0 +1,10 @@
+- name: Wait for control plane API server to be reachable
+  wait_for:
+    host: "{{ hostvars['vm1']['ansible_host'] }}"
+    port: 6443
+    timeout: 120
+
+- name: Join worker node to cluster
+  shell: "{{ hostvars['vm1']['k8s_join_command'] }}"
+  args:
+    creates: /etc/kubernetes/kubelet.conf

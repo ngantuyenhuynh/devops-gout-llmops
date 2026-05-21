@@ -1,0 +1,30 @@
+- name: Install local-path-provisioner
+  shell: kubectl apply -f https://raw.githubusercontent.com/rancher/local-path-provisioner/master/deploy/local-path-storage.yaml
+  changed_when: true
+
+- name: Set local-path as default StorageClass
+  shell: kubectl patch storageclass local-path -p '{"metadata":{"annotations":{"storageclass.kubernetes.io/is-default-class":"true"}}}'
+  changed_when: true
+
+- name: Apply root ArgoCD Application
+  shell: kubectl apply -f {{ repo_root }}/root-app.yaml
+  changed_when: true
+
+- name: Apply Prometheus stack ArgoCD Application
+  shell: kubectl apply -f {{ repo_root }}/k8s/prometheus-stack-argocd.yaml
+  changed_when: true
+
+- name: Apply ArgoCD Application manifests
+  shell: kubectl apply -f {{ repo_root }}/k8s/argocd-apps/
+  changed_when: true
+
+- name: Wait for AlertmanagerConfig CRD to be established
+  shell: kubectl wait --for=condition=Established crd/alertmanagerconfigs.monitoring.coreos.com --timeout=120s
+  retries: 5
+  delay: 15
+  register: crd_wait
+  until: crd_wait.rc == 0
+
+- name: Apply AlertmanagerConfig
+  shell: kubectl apply -f {{ repo_root }}/k8s/alertmanager-config.yaml
+  changed_when: true

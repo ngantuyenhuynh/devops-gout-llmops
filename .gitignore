@@ -1,3 +1,77 @@
+# ============================================================
+# GCP / Cloud credentials
+# ============================================================
+*-key.json
+*-credentials.json
 key.json
-*.swp
 gcp-key.json
+sa-*.json
+credentials.json
+service-account*.json
+token.json
+access_token*
+
+# ============================================================
+# Terraform
+# ============================================================
+**/.terraform/
+*.tfstate
+*.tfstate.*
+*.tfstate.backup
+crash.log
+crash.*.log
+# Giữ terraform.tfvars.example, ignore tfvars thật
+terraform.tfvars
+!terraform.tfvars.example
+override.tf
+override.tf.json
+*_override.tf
+*_override.tf.json
+
+# ============================================================
+# Ansible
+# ============================================================
+*.retry
+# inventory thật có IP/host thật — dùng inventory.example thay thế
+# inventory.yml   ← bỏ comment nếu muốn ignore
+
+# ============================================================
+# Kubernetes / Secrets
+# ============================================================
+kubeconfig
+kubeconfig.*
+*.kubeconfig
+*secret*.yaml
+*secrets*.yaml
+# Không ignore toàn bộ k8s/ nhưng block file secret cụ thể:
+infra/ansible/sa-ansible-key.json
+
+# ============================================================
+# Environment variables
+# ============================================================
+.env
+.env.*
+!.env.example
+*.env
+
+# ============================================================
+# SSH keys
+# ============================================================
+id_rsa
+id_rsa.*
+id_ed25519
+id_ed25519.*
+*.pem
+*.key
+*.p12
+*.pfx
+
+# ============================================================
+# Misc
+# ============================================================
+.claude/
+*.swp
+*.swo
+__pycache__/
+*.pyc
+.DS_Store

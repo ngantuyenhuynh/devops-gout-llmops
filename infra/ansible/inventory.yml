@@ -1,0 +1,17 @@
+# Chạy `terraform output ansible_inventory` để lấy IPs và điền vào đây
+all:
+  vars:
+    ansible_user: devops
+    ansible_ssh_private_key_file: ~/.ssh/id_rsa
+    ansible_ssh_common_args: "-o StrictHostKeyChecking=no"
+  children:
+    control_plane:
+      hosts:
+        vm1:
+          ansible_host: 34.87.166.195
+    workers:
+      hosts:
+        vm2:
+          ansible_host: 34.87.8.250
+        vm3:
+          ansible_host: 34.142.242.35

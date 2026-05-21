@@ -1,0 +1,15 @@
+k8s_version: "1.32"
+pod_cidr: "10.244.0.0/16"
+
+argocd_version: "v2.11.3"
+argocd_namespace: "argocd"
+
+gcp_region: "asia-southeast1"
+gcp_project: "macro-mender-494903-v0"
+
+namespaces:
+  - gout-eval
+  - monitoring
+  - argocd
+
+repo_root: "{{ playbook_dir }}/../.."

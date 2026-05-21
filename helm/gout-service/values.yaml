@@ -14,5 +14,13 @@ containerPort: 8000
 env: {}
 envFromSecrets: []
 
+resources:
+  requests:
+    memory: "256Mi"
+    cpu: "100m"
+  limits:
+    memory: "1Gi"
+    cpu: "500m"
+
 monitoring:
   enabled: false
