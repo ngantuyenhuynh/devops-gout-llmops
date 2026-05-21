@@ -2,7 +2,7 @@ name: "CE: Continuous Evaluation (Data Trigger)"
 
 on:
   push:
-    branches: [ "main", "dev" ]
+    branches: [ "main" ]
     paths:
       - 'data/**'                  # 🌟 Kích hoạt RIÊNG khi có thay đổi dữ liệu test
       - '.github/workflows/ce.yaml'
@@ -62,15 +62,18 @@ jobs:
           cluster_name: ${{ env.GKE_CLUSTER }}
           location: ${{ env.GKE_LOCATION }}
 
+      - name: Update evaluation-job image SHA
+        run: |
+          sed -i "s|\(image: .*/evaluation-job\):.*|\1:${{ github.sha }}|g" k8s/evaluation-job/job.yaml
+
+      - name: Pull Evaluation Model in Ollama
+        run: |
+          MODEL_NAME=$(awk '/name: EVAL_MODEL_NAME/{getline; sub(/^[[:space:]]*value:[[:space:]]*/, "", $0); print; exit}' k8s/evaluation-job/job.yaml)
+          kubectl exec -n ${{ env.K8S_NAMESPACE }} deployment/ollama-worker -- ollama pull "$MODEL_NAME"
+
       - name: Run CE Smoke Test Job
         run: |
-          # Xóa Job cũ trên cụm K8s (nếu có) để tránh xung đột tên
           kubectl delete job evaluation-job -n ${{ env.K8S_NAMESPACE }} --ignore-not-found=true
-          
-          echo "⏳ Đang đợi 15 giây để hệ thống ổn định trước khi nạp bộ dữ liệu thực nghiệm mới..."
-          sleep 15
-          
-          # Triển khai Job mới mang theo data vừa cập nhật
           kubectl apply -f k8s/evaluation-job/job.yaml
           
           # Đợi tối đa 1 tiếng cho tiến trình chấm điểm RAGAS hoàn tất
