@@ -8,7 +8,10 @@ spec:
   source:
     repoURL: 'https://github.com/ngantuyenhuynh/devops-gout-llmops.git'
     targetRevision: main
-    path: k8s/ui
+    path: helm/gout-service
+    helm:
+      valueFiles:
+        - ../../k8s/gout-ui-values.yaml
   destination:
     server: 'https://kubernetes.default.svc'
     namespace: gout-eval
