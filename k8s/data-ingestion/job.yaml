@@ -6,6 +6,8 @@ metadata:
 spec:
   template:
     spec:
+      imagePullSecrets:
+      - name: artifact-registry-key
       containers:
       - name: ingestion-container
         # Nhớ thay YOUR_PROJECT_ID bằng nt114-q21

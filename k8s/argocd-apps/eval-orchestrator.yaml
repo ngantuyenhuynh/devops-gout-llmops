@@ -8,13 +8,16 @@ spec:
   source:
     repoURL: 'https://github.com/ngantuyenhuynh/devops-gout-llmops.git'
     targetRevision: main
-    path: k8s/eval-orchestrator
+    path: helm/gout-service
+    helm:
+      valueFiles:
+        - ../../k8s/eval-orchestrator-values.yaml
   destination:
     server: 'https://kubernetes.default.svc'
-    namespace: gout-eval # Namespace ứng dụng sẽ chạy
+    namespace: gout-eval
   syncPolicy:
     automated:
-      prune: true # Tự động xóa tài nguyên nếu bị xóa trên Git
-      selfHeal: true # Tự động sửa lỗi nếu có ai sửa tay trên cụm K8s
+      prune: true
+      selfHeal: true
     syncOptions:
       - CreateNamespace=true
