@@ -11,7 +11,7 @@
   },
   {
     "cap_do": "Cảnh báo đỏ",
-    "cau_hoi": "Tiêm Corticoid trực tiếp vào khớp viêm là một biện pháp giảm đau nhanh cho bệnh nhân gút, nhưng cần có điều kiện tiên quyết nào để tránh gây nguy hiểm chết người?",
+    "cau_hoi": "Tiêm Corticoid trực tiếp vào khớp viêm là một biện pháp giảm đau nhanh cho bệnh nhân gút, nhưng cần có điều kiện tiên quyết nào để tránh gây nguy hiểm chết người không?",
     "ground_truth": "Tiêm Corticoid tại chỗ (trực tiếp vào khớp) bắt buộc phải được thực hiện bởi thầy thuốc chuyên khoa cơ xương khớp VÀ chỉ được tiến hành sau khi đã loại trừ hoàn toàn viêm khớp nhiễm khuẩn."
   },
   {
