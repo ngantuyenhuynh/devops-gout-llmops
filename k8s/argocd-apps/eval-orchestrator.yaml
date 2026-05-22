@@ -1,7 +1,7 @@
 apiVersion: argoproj.io/v1alpha1
 kind: Application
 metadata:
-  name: eval-orchestrator-app
+  name: eval-orchestrator
   namespace: argocd
 spec:
   project: default

@@ -21,11 +21,12 @@ resource "google_compute_firewall" "k3s" {
 
   allow {
     protocol = "tcp"
-    ports    = ["22", "6443", "10250", "30000-32767"]
+    ports    = ["22", "6443", "9100", "10250", "30000-32767"]
+                               # ^^^ thêm 9100
   }
   allow {
     protocol = "udp"
-    ports    = ["8472"] # Flannel VXLAN
+    ports    = ["8472"]
   }
   allow {
     protocol = "icmp"

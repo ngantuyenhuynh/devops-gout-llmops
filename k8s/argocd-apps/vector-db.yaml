@@ -1,7 +1,7 @@
 apiVersion: argoproj.io/v1alpha1
 kind: Application
 metadata:
-  name: vector-db-app
+  name: qdrant
   namespace: argocd
 spec:
   project: default

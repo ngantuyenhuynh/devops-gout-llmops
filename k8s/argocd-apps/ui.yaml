@@ -1,7 +1,7 @@
 apiVersion: argoproj.io/v1alpha1
 kind: Application
 metadata:
-  name: ui-app
+  name: gout-ui
   namespace: argocd
 spec:
   project: default
