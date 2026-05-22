@@ -1,7 +1,7 @@
 apiVersion: argoproj.io/v1alpha1
 kind: Application
 metadata:
-  name: data-ingestion-job
+  name: data-ingestion
   namespace: argocd
 spec:
   project: default
