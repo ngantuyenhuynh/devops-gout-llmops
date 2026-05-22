@@ -22,3 +22,7 @@
 - name: Verify cluster connectivity
   shell: kubectl get nodes
   changed_when: false
+
+- name: Label node gout-llmops-vm3 as worker-ai
+  shell: kubectl label node gout-llmops-vm3 role=worker-ai --overwrite
+  changed_when: false
