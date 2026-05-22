@@ -67,11 +67,20 @@ jobs:
       - name: Pull Evaluation Model in Ollama
         run: |
           MODEL_NAME=$(awk '/name: EVAL_MODEL_NAME/{getline; sub(/^[[:space:]]*value:[[:space:]]*/, "", $0); print; exit}' k8s/evaluation-job/job.yaml)
-          kubectl exec -n ${{ env.K8S_NAMESPACE }} deployment/ollama-worker -- ollama pull "$MODEL_NAME"
+          if kubectl exec -n ${{ env.K8S_NAMESPACE }} deployment/ollama-worker -- ollama list 2>/dev/null | grep -q "$MODEL_NAME"; then
+            echo "Model $MODEL_NAME đã có sẵn, bỏ qua bước pull."
+          else
+            kubectl exec -n ${{ env.K8S_NAMESPACE }} deployment/ollama-worker -- ollama pull "$MODEL_NAME"
+          fi
 
       - name: Run CE Smoke Test Job
         run: |
           kubectl delete job evaluation-job -n ${{ env.K8S_NAMESPACE }} --ignore-not-found=true
+
+          # Đợi job cũ xóa xong để tránh race condition
+          kubectl wait --for=delete job/evaluation-job \
+            -n ${{ env.K8S_NAMESPACE }} --timeout=60s 2>/dev/null || true
+
           kubectl apply -f k8s/evaluation-job/job.yaml
           
           # Đợi tối đa 1 tiếng cho tiến trình chấm điểm RAGAS hoàn tất
