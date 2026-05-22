@@ -13,6 +13,8 @@ spec:
       labels:
         app: ollama-worker
     spec:
+      nodeSelector:
+        role: worker-ai   # <--- Thêm dòng này để ghim pod vào vm3
       containers:
       - name: ollama
         image: ollama/ollama:0.6.2
@@ -25,16 +27,3 @@ spec:
           limits:
             memory: "5Gi"
             cpu: "1500m"
----
-apiVersion: v1
-kind: Service
-metadata:
-  name: ollama-service
-  namespace: gout-eval
-spec:
-  selector:
-    app: ollama-worker
-  ports:
-    - protocol: TCP
-      port: 11434 # Cổng giao tiếp tiêu chuẩn của Ollama
-      targetPort: 11434
