@@ -11,7 +11,7 @@ spec:
       containers:
       - name: ingestion-container
         # Nhớ thay YOUR_PROJECT_ID bằng macro-mender-494903-v0
-        image: asia-southeast1-docker.pkg.dev/macro-mender-494903-v0/gout-llmops-repo/data-ingestion:dae5584d20b82d55f65bca7ca7def726e8a26a01
+        image: asia-southeast1-docker.pkg.dev/macro-mender-494903-v0/gout-llmops-repo/data-ingestion:3ae686b0665e35fb4858a626d5a4dbc184a20a34
         imagePullPolicy: Always
       restartPolicy: OnFailure
   # Tự động xóa Job sau khi chạy xong 600 giây (10 phút) để pipeline kịp wait
