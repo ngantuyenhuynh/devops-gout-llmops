@@ -1,6 +1,6 @@
 image:
   repository: asia-southeast1-docker.pkg.dev/macro-mender-494903-v0/gout-llmops-repo/gout-ui
-  tag: "3a3116edfc3a49448334e9ec7b2ea18a8fccf4e4"
+  tag: "ce87ce6d05ca8aa21c00a69dc7409747771cc9ad"
 containerPort: 8501
 service:
   port: 8501
