@@ -108,23 +108,44 @@ jobs:
           --namespace=monitoring \
           --dry-run=client -o yaml | kubectl apply -f -
 
-    # === BƯỚC 3: CẬP NHẬT GITOPS ===
-    - name: Update GitOps Config
+    # === BƯỚC 3: DEPLOY INFRASTRUCTURE ===
+    - name: Deploy infrastructure services
       run: |
-        SHA="${{ steps.image_sha.outputs.sha }}"
-        
-        # 1. Các dịch vụ Infrastructure (Giữ nguyên kubectl apply)
         kubectl apply -f k8s/vector-db/qdrant.yaml
         kubectl apply -f k8s/inference-worker/ollama.yaml
-        
-        kubectl delete job gout-ingestion-job -n ${{ env.K8S_NAMESPACE }} --ignore-not-found=true
-        kubectl create -f k8s/data-ingestion/job.yaml
 
-        # 2. Patch testset path nếu có thay đổi
+    # === BƯỚC 4: RUN DATA INGESTION (wait ngay sau create) ===
+    - name: Run and wait for Data Ingestion Job
+      run: |
+        # Xóa job cũ nếu còn tồn tại
+        kubectl delete job gout-ingestion-job -n ${{ env.K8S_NAMESPACE }} --ignore-not-found=true
+
+        # Đợi job cũ xóa xong hoàn toàn trước khi tạo mới (tránh race condition)
+        kubectl wait --for=delete job/gout-ingestion-job \
+          -n ${{ env.K8S_NAMESPACE }} --timeout=60s 2>/dev/null || true
+
+        # Dùng apply thay create để idempotent
+        kubectl apply -f k8s/data-ingestion/job.yaml
+
+        echo "Waiting for ingestion job to complete..."
+        if ! kubectl wait --for=condition=complete job/gout-ingestion-job \
+            -n ${{ env.K8S_NAMESPACE }} --timeout=600s; then
+          echo "Ingestion job thất bại!"
+          kubectl logs job/gout-ingestion-job -n ${{ env.K8S_NAMESPACE }} || true
+          exit 1
+        fi
+        echo "Ingestion hoàn tất!"
+
+    # === BƯỚC 5: PUSH GITOPS (sau khi infra và ingestion ổn định) ===
+    - name: Push GitOps changes
+      run: |
+        SHA="${{ steps.image_sha.outputs.sha }}"
         TESTSET_PATH="${{ steps.eval_testset.outputs.testset_path }}"
+
+        # Patch testset path nếu có thay đổi
         sed -i "s|value: /app/data/.*\.json.*|value: $TESTSET_PATH|g" k8s/evaluation-job/job.yaml
 
-        # 3. PUSH NGƯỢC VỀ GIT ĐỂ ARGOCD TỰ SYNC — [skip ci] tránh vòng lặp CI/CD
+        # Push ngược về Git để ArgoCD tự sync — [skip ci] tránh vòng lặp CI/CD
         git config user.email "ci@github.com"
         git config user.name "GitHub Actions"
         git stash
@@ -134,7 +155,7 @@ jobs:
         git commit -m "cd: GitOps update images to $SHA [skip ci]" || echo "No changes to commit"
         git push origin main
 
-    # === BƯỚC 4: SMOKE TEST ===
+    # === BƯỚC 6: SMOKE TEST ===
     - name: Extract Evaluation Config
       id: eval_config
       run: |
@@ -151,20 +172,26 @@ jobs:
 
     - name: Pull Evaluation Model in Ollama
       run: |
-        echo "Đang tải model ${{ steps.eval_config.outputs.model_name }} vào Ollama..."
-        kubectl exec -n ${{ env.K8S_NAMESPACE }} deployment/ollama-worker -- ollama pull "${{ steps.eval_config.outputs.model_name }}"
-
-    - name: Wait for Data Ingestion Job
-      run: |
-        kubectl wait --for=condition=complete job/gout-ingestion-job \
-          -n ${{ env.K8S_NAMESPACE }} --timeout=600s
+        MODEL="${{ steps.eval_config.outputs.model_name }}"
+        echo "Kiểm tra model $MODEL trong Ollama..."
+        if kubectl exec -n ${{ env.K8S_NAMESPACE }} deployment/ollama-worker -- ollama list 2>/dev/null | grep -q "$MODEL"; then
+          echo "Model $MODEL đã có sẵn, bỏ qua bước pull."
+        else
+          echo "Đang tải model $MODEL vào Ollama..."
+          kubectl exec -n ${{ env.K8S_NAMESPACE }} deployment/ollama-worker -- ollama pull "$MODEL"
+        fi
 
     - name: Run Smoke Test (Mini Eval)
       run: |
         kubectl delete job evaluation-job -n ${{ env.K8S_NAMESPACE }} --ignore-not-found=true
-        kubectl create -f k8s/evaluation-job/job.yaml
 
-        if ! kubectl wait --for=condition=complete job/evaluation-job -n ${{ env.K8S_NAMESPACE }} --timeout=3600s; then
+        # Đợi evaluation-job cũ xóa xong
+        kubectl wait --for=delete job/evaluation-job \
+          -n ${{ env.K8S_NAMESPACE }} --timeout=60s 2>/dev/null || true
+
+        kubectl apply -f k8s/evaluation-job/job.yaml
+
+        if ! kubectl wait --for=condition=complete job/evaluation-job -n ${{ env.K8S_NAMESPACE }} --timeout=600s; then
           echo "Smoke test thất bại cho model ${{ steps.eval_config.outputs.model_name }}!"
           kubectl logs job/evaluation-job -n ${{ env.K8S_NAMESPACE }} || true
           exit 1

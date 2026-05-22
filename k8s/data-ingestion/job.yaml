@@ -14,5 +14,5 @@ spec:
         image: asia-southeast1-docker.pkg.dev/macro-mender-494903-v0/gout-llmops-repo/data-ingestion:dae5584d20b82d55f65bca7ca7def726e8a26a01
         imagePullPolicy: Always
       restartPolicy: OnFailure
-  # Tự động xóa Job sau khi chạy xong 100 giây để sạch cụm K8s
-  ttlSecondsAfterFinished: 100
+  # Tự động xóa Job sau khi chạy xong 600 giây (10 phút) để pipeline kịp wait
+  ttlSecondsAfterFinished: 600

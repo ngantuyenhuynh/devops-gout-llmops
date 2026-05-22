@@ -26,6 +26,8 @@ QUALITY_GATE_COMPLETENESS_MIN = float(os.getenv("QUALITY_GATE_COMPLETENESS_MIN",
 QUALITY_GATE_RAGAS_FAITHFULNESS_MIN = float(os.getenv("QUALITY_GATE_RAGAS_FAITHFULNESS_MIN", "0.70"))
 QUALITY_GATE_RAGAS_RELEVANCE_MIN = float(os.getenv("QUALITY_GATE_RAGAS_RELEVANCE_MIN", "0.70"))
 QUALITY_GATE_RAGAS_CONTEXT_RECALL_MIN = float(os.getenv("QUALITY_GATE_RAGAS_CONTEXT_RECALL_MIN", "0.60"))
+_max_samples_env = os.getenv("MAX_SAMPLES", "")
+MAX_SAMPLES = int(_max_samples_env) if _max_samples_env.strip() else None  # None = chạy hết
 
 # --- DANH SÁCH CÁC MÔ HÌNH CẦN ĐÁNH GIÁ ---
 MODELS_TO_TEST = [
@@ -363,6 +365,9 @@ def main() -> None:
     reset_output_files()
     client = OpenAI()
     rows = load_testset(DATA_PATH)
+    if MAX_SAMPLES is not None:
+        rows = rows[:MAX_SAMPLES]
+        print(f"[INFO] MAX_SAMPLES={MAX_SAMPLES}: chỉ chạy {len(rows)} test case.")
     judge_records: list[dict[str, Any]] = []
 
     for idx, raw in enumerate(tqdm(rows, desc="Evaluating")):
