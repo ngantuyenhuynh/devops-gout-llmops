@@ -3,6 +3,7 @@ image:
   tag: "dae5584d20b82d55f65bca7ca7def726e8a26a01"
 containerPort: 8501
 service:
+  type: LoadBalancer
   port: 8501
 resources:
   requests:
