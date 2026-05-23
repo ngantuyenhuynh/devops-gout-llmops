@@ -11,6 +11,38 @@ on:
     branches: [ "main" ]
 
 jobs:
+  # Xác định thư mục nào có thay đổi
+  changes:
+    name: "Detect File Changes"
+    runs-on: ubuntu-latest
+    outputs:
+      orchestrator: ${{ steps.filter.outputs.orchestrator }}
+      ui: ${{ steps.filter.outputs.ui }}
+      ingestion: ${{ steps.filter.outputs.ingestion }}
+      eval_job: ${{ steps.filter.outputs.eval_job }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dorny/paths-filter@v3
+        id: filter
+        with:
+          filters: |
+            orchestrator:
+              - 'src/eval-orchestrator/**'
+              - 'k8s/eval-orchestrator-values.yaml'
+              - '.github/workflows/ci.yaml'
+            ui:
+              - 'src/ui/**'
+              - 'k8s/gout-ui-values.yaml'
+              - '.github/workflows/ci.yaml'
+            ingestion:
+              - 'src/data-ingestion/**'
+              - 'k8s/data-ingestion/**'
+              - '.github/workflows/ci.yaml'
+            eval_job:
+              - 'src/evaluation-job/**'
+              - 'k8s/evaluation-job/**'
+              - '.github/workflows/ci.yaml'
+
   # Vẫn giữ nguyên quét mã nguồn
   security-audit:
     name: "Audit: Repository Security Scan"
@@ -28,7 +60,8 @@ jobs:
 
   # GỌI KHUÔN ĐÚC CHO ORCHESTRATOR
   build-orchestrator:
-    needs: security-audit
+    needs: [security-audit, changes]
+    if: ${{ needs.changes.outputs.orchestrator == 'true' }}
     uses: ./.github/workflows/reusable-build.yaml
     with:
       service_name: "eval-orchestrator"
@@ -38,7 +71,8 @@ jobs:
 
   # GỌI KHUÔN ĐÚC CHO UI
   build-ui:
-    needs: security-audit
+    needs: [security-audit, changes]
+    if: ${{ needs.changes.outputs.ui == 'true' }}
     uses: ./.github/workflows/reusable-build.yaml
     with:
       service_name: "gout-ui"
@@ -48,7 +82,8 @@ jobs:
 
   # GỌI KHUÔN ĐÚC CHO INGESTION
   build-ingestion:
-    needs: security-audit
+    needs: [security-audit, changes]
+    if: ${{ needs.changes.outputs.ingestion == 'true' }}
     uses: ./.github/workflows/reusable-build.yaml
     with:
       service_name: "data-ingestion"
@@ -58,7 +93,8 @@ jobs:
 
   # GỌI KHUÔN ĐÚC CHO EVAL JOB
   build-eval-job:
-    needs: security-audit
+    needs: [security-audit, changes]
+    if: ${{ needs.changes.outputs.eval_job == 'true' }}
     uses: ./.github/workflows/reusable-build.yaml
     with:
       service_name: "evaluation-job"

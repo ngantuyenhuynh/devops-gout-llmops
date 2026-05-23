@@ -60,6 +60,7 @@ jobs:
           severity: 'CRITICAL,HIGH'
 
       - name: Push to Artifact Registry
+        if: ${{ github.event_name != 'pull_request' }}
         run: |
           IMAGE_PATH=${{ vars.GCP_REGION }}-docker.pkg.dev/${{ vars.PROJECT_ID }}/${{ vars.REPO_NAME }}/${{ inputs.service_name }}
           docker tag ${{ inputs.service_name }}:test $IMAGE_PATH:${{ github.sha }}
