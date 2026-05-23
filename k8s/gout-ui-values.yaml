@@ -3,7 +3,9 @@ image:
   tag: "2c0a0de7a601a9e310ed1c2ad1b37542cb48d439"
 containerPort: 8501
 service:
+  type: NodePort
   port: 8501
+  nodePort: 30080
 resources:
   requests:
     memory: "256Mi"
