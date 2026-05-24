@@ -9,8 +9,8 @@ resources:
     memory: "512Mi"
     cpu: "200m"
   limits:
-    memory: "2Gi"
-    cpu: "1"
+    memory: "4Gi"
+    cpu: "2"
 
 monitoring:
   enabled: true

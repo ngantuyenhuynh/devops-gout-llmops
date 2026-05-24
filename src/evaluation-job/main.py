@@ -75,14 +75,23 @@ def append_jsonl(path: Path, record: dict[str, Any]) -> None:
         with path.open("a", encoding="utf-8") as f:
             f.write(json.dumps(record, ensure_ascii=False) + "\n")
 
-def ask_model(question: str, model_name: str) -> dict[str, Any]:
+def ask_model(question: str, model_name: str, max_retries: int = 3) -> dict[str, Any]:
+    import time
     payload = {"question": question, "model_name": model_name}
-    response = requests.post(ORCHESTRATOR_URL, json=payload, timeout=REQUEST_TIMEOUT)
-    response.raise_for_status()
-    data = response.json()
-    if data.get("error"):
-        raise RuntimeError(f"Orchestrator returned error for question '{question}': {data['error']}")
-    return data
+    
+    for attempt in range(max_retries):
+        try:
+            response = requests.post(ORCHESTRATOR_URL, json=payload, timeout=REQUEST_TIMEOUT)
+            response.raise_for_status()
+            data = response.json()
+            if data.get("error"):
+                raise RuntimeError(f"Orchestrator returned error for question '{question}': {data['error']}")
+            return data
+        except (requests.exceptions.ConnectionError, requests.exceptions.Timeout, RuntimeError) as e:
+            if attempt == max_retries - 1:
+                raise
+            print(f"\n[WARNING] Lỗi kết nối (có thể do timeout/model đang load). Thử lại lần {attempt + 2}/{max_retries} sau 5 giây... Chi tiết: {e}")
+            time.sleep(5)
 
 
 def extract_contexts(result: dict[str, Any]) -> list[str]:
