@@ -132,6 +132,7 @@ jobs:
   # ==========================================
   # JOB 3: RUN SMOKE TEST
   # ==========================================
+  
   run-smoke-test:
     name: "Run Smoke Test"
     needs: [prepare-and-gitops, run-data-ingestion]
@@ -170,6 +171,18 @@ jobs:
             echo "Đang tải model $MODEL vào Ollama..."
             kubectl exec -n ${{ env.K8S_NAMESPACE }} deployment/ollama-worker -- ollama pull "$MODEL"
           fi
+      - name: Wait for eval-orchestrator ready
+        run: |
+          echo "Waiting for eval-orchestrator to be ready..."
+          for i in $(seq 1 30); do
+            kubectl rollout status deployment/eval-orchestrator -n gout-eval --timeout=10s 2>/dev/null && \
+            kubectl exec -n gout-eval deployment/eval-orchestrator -- \
+              python3 -c "import urllib.request; urllib.request.urlopen('http://localhost:8000/metrics')" \
+              2>/dev/null && \
+            echo "Orchestrator ready!" && break
+            echo "Attempt $i/30 - not ready yet, waiting 10s..."
+            sleep 10
+          done
 
       - name: Run Smoke Test (Mini Eval)
         run: |
