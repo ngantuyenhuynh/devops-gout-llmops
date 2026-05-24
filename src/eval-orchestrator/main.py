@@ -123,6 +123,8 @@ TRẢ LỜI:"""
     def generate():
         yield json.dumps({"type": "sources", "sources": sources}) + "\n"
         
+        trace_id = langfuse_context.get_current_trace_id()
+        
         full_answer = ""
         try:
             with requests.post(OLLAMA_URL, json=payload, timeout=900, stream=True) as response:
@@ -136,9 +138,12 @@ TRẢ LỜI:"""
                             yield json.dumps({"type": "chunk", "content": text}) + "\n"
                         if chunk.get("done"):
                             try:
-                                langfuse_context.update_current_trace(output=full_answer)
+                                from langfuse import Langfuse
+                                lf = Langfuse()
+                                lf.trace(id=trace_id, output=full_answer)
+                                lf.flush()
                             except Exception as trace_err:
-                                print(f"Warning: Langfuse trace update failed: {trace_err}")
+                                print(f"Warning: Langfuse manual trace update failed: {trace_err}")
         except Exception as e:
             yield json.dumps({"type": "error", "error": f"Lỗi khi gọi Ollama: {str(e)}"}) + "\n"
 
