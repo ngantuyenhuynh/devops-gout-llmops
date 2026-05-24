@@ -97,7 +97,7 @@ def ask_gout_bot_stream(req: QuestionRequest):
     )
 
     try:
-        docs = vector_store.similarity_search(req.question, k=3)
+        docs = vector_store.similarity_search(req.question, k=2)
         context = "\n---\n".join([doc.page_content for doc in docs])
         sources = list(set([doc.metadata.get("source", "Unknown") for doc in docs]))
     except Exception as e:
@@ -135,7 +135,10 @@ TRẢ LỜI:"""
                             full_answer += text
                             yield json.dumps({"type": "chunk", "content": text}) + "\n"
                         if chunk.get("done"):
-                            langfuse_context.update_current_trace(output=full_answer)
+                            try:
+                                langfuse_context.update_current_trace(output=full_answer)
+                            except Exception as trace_err:
+                                print(f"Warning: Langfuse trace update failed: {trace_err}")
         except Exception as e:
             yield json.dumps({"type": "error", "error": f"Lỗi khi gọi Ollama: {str(e)}"}) + "\n"
 
