@@ -6,7 +6,7 @@ on:
     paths:
       - 'src/**'
       - 'k8s/**'
-      - '.github/workflows/ci.yaml'
+      - '.github/workflows/**'
   pull_request:
     branches: [ "main" ]
 
@@ -29,19 +29,19 @@ jobs:
             orchestrator:
               - 'src/eval-orchestrator/**'
               - 'k8s/eval-orchestrator-values.yaml'
-              - '.github/workflows/ci.yaml'
+              - '.github/workflows/**'
             ui:
               - 'src/ui/**'
               - 'k8s/gout-ui-values.yaml'
-              - '.github/workflows/ci.yaml'
+              - '.github/workflows/**'
             ingestion:
               - 'src/data-ingestion/**'
               - 'k8s/data-ingestion/**'
-              - '.github/workflows/ci.yaml'
+              - '.github/workflows/**'
             eval_job:
               - 'src/evaluation-job/**'
               - 'k8s/evaluation-job/**'
-              - '.github/workflows/ci.yaml'
+              - '.github/workflows/**'
 
   # Vẫn giữ nguyên quét mã nguồn
   security-audit:
