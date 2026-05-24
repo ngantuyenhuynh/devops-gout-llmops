@@ -55,7 +55,13 @@ jobs:
       - name: Pull Evaluation Model in Ollama
         run: |
           MODEL_NAME=$(awk '/name: EVAL_MODEL_NAME/{getline; sub(/^[[:space:]]*value:[[:space:]]*/, "", $0); print; exit}' k8s/evaluation-job/job.yaml)
-          kubectl exec -n "$K8S_NAMESPACE" deployment/ollama-worker -- ollama pull "$MODEL_NAME"
+          echo "Kiểm tra model $MODEL_NAME trong Ollama..."
+          if kubectl exec -n "$K8S_NAMESPACE" deployment/ollama-worker -- ollama list 2>/dev/null | grep -q "$MODEL_NAME"; then
+            echo "Model $MODEL_NAME đã có sẵn, bỏ qua bước pull."
+          else
+            echo "Đang tải model $MODEL_NAME vào Ollama..."
+            kubectl exec -n "$K8S_NAMESPACE" deployment/ollama-worker -- ollama pull "$MODEL_NAME"
+          fi
 
       - name: Run Full Evaluation Job
         run: |
@@ -64,6 +70,8 @@ jobs:
           sed -i "s|gout_test_cases_mini.json|$(basename "$FULL_TESTSET_PATH")|g" "$TMP_JOB_FILE"
 
           kubectl delete job "$EVALUATION_JOB_NAME" -n "$K8S_NAMESPACE" --ignore-not-found=true
+          kubectl wait --for=delete job/"$EVALUATION_JOB_NAME" -n "$K8S_NAMESPACE" --timeout=60s 2>/dev/null || true
+          
           kubectl apply -f "$TMP_JOB_FILE"
 
           echo "Waiting for full evaluation to complete (up to $((EVAL_TIMEOUT_SECONDS/3600)) hours)..."
