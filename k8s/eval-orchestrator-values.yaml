@@ -18,3 +18,9 @@ envFromSecrets:
   - name: OPENAI_API_KEY
     secretName: openai-secret
     secretKey: OPENAI_API_KEY
+  - name: LANGFUSE_SECRET_KEY
+    secretName: langfuse-secret
+    secretKey: secret-key
+  - name: LANGFUSE_PUBLIC_KEY
+    secretName: langfuse-secret
+    secretKey: public-key
