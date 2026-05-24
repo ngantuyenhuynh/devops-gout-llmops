@@ -140,7 +140,12 @@ TRẢ LỜI:"""
                             try:
                                 from langfuse import Langfuse
                                 lf = Langfuse()
-                                lf.trace(id=trace_id, output=full_answer)
+                                lf.trace(
+                                    id=trace_id,
+                                    input=req.question,
+                                    output=full_answer,
+                                    metadata={"model_used": req.model_name}
+                                )
                                 lf.flush()
                             except Exception as trace_err:
                                 print(f"Warning: Langfuse manual trace update failed: {trace_err}")
