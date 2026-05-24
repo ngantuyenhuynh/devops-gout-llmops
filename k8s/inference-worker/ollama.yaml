@@ -27,6 +27,14 @@ spec:
           limits:
             memory: "5Gi"
             cpu: "3000m"
+        volumeMounts:
+        - name: ollama-storage
+          mountPath: /root/.ollama
+      volumes:
+      - name: ollama-storage
+        hostPath:
+          path: /mnt/data/ollama
+          type: DirectoryOrCreate
 ---
 apiVersion: v1
 kind: Service
