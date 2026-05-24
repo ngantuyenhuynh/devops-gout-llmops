@@ -1,1 +1,1 @@
-trigger ci ui 2
+trigger build all 3

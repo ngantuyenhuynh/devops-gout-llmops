@@ -107,7 +107,13 @@ jobs:
     name: "GitOps: Update K8s Image Tags"
     runs-on: ubuntu-latest
     # Chỉ chạy khi push vào main (không chạy trên PR)
-    if: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' }}
+    # Và chỉ chạy khi không có job nào fail/cancel (chấp nhận skipped)
+    if: |
+      always() && 
+      github.event_name == 'push' && 
+      github.ref == 'refs/heads/main' &&
+      !contains(needs.*.result, 'failure') &&
+      !contains(needs.*.result, 'cancelled')
     needs: [changes, build-orchestrator, build-ui, build-ingestion, build-eval-job]
     # Không bị block khi các build job bị skip (result: skipped is ok)
     permissions:
