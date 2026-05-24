@@ -14,6 +14,8 @@ resources:
 
 monitoring:
   enabled: true
+env:
+  LANGFUSE_HOST: "https://cloud.langfuse.com"
 envFromSecrets:
   - name: OPENAI_API_KEY
     secretName: openai-secret
