@@ -1,6 +1,6 @@
 image:
   repository: asia-southeast1-docker.pkg.dev/macro-mender-494903-v0/gout-llmops-repo/eval-orchestrator
-  tag: "c786b534ce03248af71b08e1acfcf05cd1c45fed"
+  tag: "fe22861559580447e268beac18eac8fae611f00a"
 containerPort: 8000
 service:
   port: 8000
