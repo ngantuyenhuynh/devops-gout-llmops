@@ -15,7 +15,8 @@ spec:
           adminPassword: "admin"
           replicas: 1
           service:
-            type: LoadBalancer
+            type: NodePort
+            nodePort: 30356
           resources:
             requests:
               memory: "128Mi"
