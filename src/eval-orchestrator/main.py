@@ -57,7 +57,7 @@ TRẢ LỜI:"""
 
     # 3. CẬP NHẬT Ở ĐÂY: Truyền biến model_name vào payload của Ollama
     payload = {
-        "model": req.model_name or "qwen2:1.5b",
+        "model": req.model_name or "qwen2.5:1.5b",
         "prompt": prompt,
         "stream": False
     }

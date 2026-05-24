@@ -12,7 +12,7 @@ with st.sidebar:
     st.header("⚙️ Bảng điều khiển")
     selected_model = st.selectbox(
         "🧠 Chọn Model:",
-        ["qwen2:1.5b"]
+        ["qwen2.5:1.5b", "qwen2:1.5b"]
     )
     rag_enabled = st.checkbox("Kích hoạt mode RAG", value=True)
     if rag_enabled:
