@@ -35,6 +35,8 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 2
 
       - name: Setup kubectl
         run: |
@@ -154,12 +156,24 @@ jobs:
         run: |
           SHA="${{ steps.image_sha.outputs.sha }}"
           TESTSET_PATH="${{ steps.eval_testset.outputs.testset_path }}"
+          
+          # Cập nhật Testset trước khi pull/commit
           sed -i "s|value: /app/data/.*\.json.*|value: $TESTSET_PATH|g" k8s/evaluation-job/job.yaml
+          
           git config user.email "ci@github.com"
           git config user.name "GitHub Actions"
-          git stash
-          git pull --rebase origin main
-          git stash pop
+          
+          # Kiểm tra nếu có thay đổi thì mới stash
+          if [ -n "$(git status --porcelain)" ]; then
+            echo "Phát hiện thay đổi local, đang stash..."
+            git stash
+            git pull --rebase origin main
+            git stash pop
+          else
+            echo "Không có thay đổi local, pull trực tiếp..."
+            git pull --rebase origin main
+          fi
+          
           git add k8s/
           git commit -m "cd: GitOps update images to $SHA [skip ci]" || echo "No changes to commit"
           git push origin main
