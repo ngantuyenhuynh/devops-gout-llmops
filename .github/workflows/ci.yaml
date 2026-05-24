@@ -6,7 +6,8 @@ on:
     paths:
       - 'src/**'
       - 'k8s/**'
-      - '.github/workflows/**'
+      - '.github/workflows/ci.yaml'
+      - '.github/workflows/reusable-build.yaml'
   pull_request:
     branches: [ "main" ]
 
@@ -29,19 +30,23 @@ jobs:
             orchestrator:
               - 'src/eval-orchestrator/**'
               - 'k8s/eval-orchestrator-values.yaml'
-              - '.github/workflows/**'
+              - '.github/workflows/ci.yaml'
+              - '.github/workflows/reusable-build.yaml'
             ui:
               - 'src/ui/**'
               - 'k8s/gout-ui-values.yaml'
-              - '.github/workflows/**'
+              - '.github/workflows/ci.yaml'
+              - '.github/workflows/reusable-build.yaml'
             ingestion:
               - 'src/data-ingestion/**'
               - 'k8s/data-ingestion/**'
-              - '.github/workflows/**'
+              - '.github/workflows/ci.yaml'
+              - '.github/workflows/reusable-build.yaml'
             eval_job:
               - 'src/evaluation-job/**'
               - 'k8s/evaluation-job/**'
-              - '.github/workflows/**'
+              - '.github/workflows/ci.yaml'
+              - '.github/workflows/reusable-build.yaml'
 
   # Vẫn giữ nguyên quét mã nguồn
   security-audit:

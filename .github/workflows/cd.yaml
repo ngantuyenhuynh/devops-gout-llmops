@@ -79,17 +79,17 @@ jobs:
           CHANGED_FILES=$(git diff --name-only $BASE_SHA $HEAD_SHA || echo "")
           echo "Changed files: $CHANGED_FILES"
           
-          if echo "$CHANGED_FILES" | grep -qE '^src/eval-orchestrator|^k8s/eval-orchestrator-values.yaml|^\.github/workflows/'; then
+          if echo "$CHANGED_FILES" | grep -qE '^src/eval-orchestrator|^k8s/eval-orchestrator-values.yaml|^\.github/workflows/ci\.yaml|^\.github/workflows/reusable-build\.yaml'; then
             sed -i "s|tag: \".*\"|tag: \"$SHA\"|g" k8s/eval-orchestrator-values.yaml
             echo "Updated eval-orchestrator to $SHA"
           fi
           
-          if echo "$CHANGED_FILES" | grep -qE '^src/ui|^k8s/gout-ui-values.yaml|^\.github/workflows/'; then
+          if echo "$CHANGED_FILES" | grep -qE '^src/ui|^k8s/gout-ui-values.yaml|^\.github/workflows/ci\.yaml|^\.github/workflows/reusable-build\.yaml'; then
             sed -i "s|tag: \".*\"|tag: \"$SHA\"|g" k8s/gout-ui-values.yaml
             echo "Updated ui to $SHA"
           fi
           
-          if echo "$CHANGED_FILES" | grep -qE '^src/data-ingestion|^k8s/data-ingestion|^\.github/workflows/'; then
+          if echo "$CHANGED_FILES" | grep -qE '^src/data-ingestion|^k8s/data-ingestion|^\.github/workflows/ci\.yaml|^\.github/workflows/reusable-build\.yaml'; then
             find k8s/ -type f -name "*.yaml" -exec sed -i "s|\(image: .*/data-ingestion\):[^ ]*|\1:$SHA|g" {} +
             echo "Updated data-ingestion to $SHA"
             echo "ingestion_changed=true" >> "$GITHUB_OUTPUT"
@@ -97,7 +97,7 @@ jobs:
             echo "ingestion_changed=false" >> "$GITHUB_OUTPUT"
           fi
           
-          if echo "$CHANGED_FILES" | grep -qE '^src/evaluation-job|^k8s/evaluation-job|^\.github/workflows/'; then
+          if echo "$CHANGED_FILES" | grep -qE '^src/evaluation-job|^k8s/evaluation-job|^\.github/workflows/ci\.yaml|^\.github/workflows/reusable-build\.yaml'; then
             find k8s/ -type f -name "*.yaml" -exec sed -i "s|\(image: .*/evaluation-job\):[^ ]*|\1:$SHA|g" {} +
             echo "Updated evaluation-job to $SHA"
             echo "eval_job_changed=true" >> "$GITHUB_OUTPUT"
