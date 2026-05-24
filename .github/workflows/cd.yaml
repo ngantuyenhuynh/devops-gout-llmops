@@ -30,6 +30,8 @@ jobs:
     outputs:
       sha: ${{ steps.image_sha.outputs.sha }}
       testset_path: ${{ steps.eval_testset.outputs.testset_path }}
+      ingestion_changed: ${{ steps.inject_tags.outputs.ingestion_changed }}
+      eval_job_changed: ${{ steps.inject_tags.outputs.eval_job_changed }}
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -61,12 +63,47 @@ jobs:
           echo "Sẽ deploy image với SHA: $SHA"
 
       - name: Inject SHA Tags into K8s Manifests
+        id: inject_tags
         run: |
           SHA="${{ steps.image_sha.outputs.sha }}"
-          sed -i "s|tag: \".*\"|tag: \"$SHA\"|g" k8s/eval-orchestrator-values.yaml
-          sed -i "s|tag: \".*\"|tag: \"$SHA\"|g" k8s/gout-ui-values.yaml
-          find k8s/ -type f -name "*.yaml" -exec sed -i "s|\(image: .*/data-ingestion\):[^ ]*|\1:$SHA|g" {} +
-          find k8s/ -type f -name "*.yaml" -exec sed -i "s|\(image: .*/evaluation-job\):[^ ]*|\1:$SHA|g" {} +
+          BASE_SHA="${{ github.event.workflow_run.before }}"
+          HEAD_SHA="${{ steps.image_sha.outputs.sha }}"
+          if [ -z "$BASE_SHA" ] || [ "$BASE_SHA" = "0000000000000000000000000000000000000000" ]; then
+            BASE_SHA="${HEAD_SHA}^"
+          fi
+          
+          # Đảm bảo có đủ lịch sử commit để diff
+          git fetch origin $BASE_SHA --depth=1 || true
+          
+          echo "Diffing $BASE_SHA...$HEAD_SHA"
+          CHANGED_FILES=$(git diff --name-only $BASE_SHA $HEAD_SHA || echo "")
+          echo "Changed files: $CHANGED_FILES"
+          
+          if echo "$CHANGED_FILES" | grep -qE '^src/eval-orchestrator|^k8s/eval-orchestrator-values.yaml|^\.github/workflows/ci.yaml'; then
+            sed -i "s|tag: \".*\"|tag: \"$SHA\"|g" k8s/eval-orchestrator-values.yaml
+            echo "Updated eval-orchestrator to $SHA"
+          fi
+          
+          if echo "$CHANGED_FILES" | grep -qE '^src/ui|^k8s/gout-ui-values.yaml|^\.github/workflows/ci.yaml'; then
+            sed -i "s|tag: \".*\"|tag: \"$SHA\"|g" k8s/gout-ui-values.yaml
+            echo "Updated ui to $SHA"
+          fi
+          
+          if echo "$CHANGED_FILES" | grep -qE '^src/data-ingestion|^k8s/data-ingestion|^\.github/workflows/ci.yaml'; then
+            find k8s/ -type f -name "*.yaml" -exec sed -i "s|\(image: .*/data-ingestion\):[^ ]*|\1:$SHA|g" {} +
+            echo "Updated data-ingestion to $SHA"
+            echo "ingestion_changed=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "ingestion_changed=false" >> "$GITHUB_OUTPUT"
+          fi
+          
+          if echo "$CHANGED_FILES" | grep -qE '^src/evaluation-job|^k8s/evaluation-job|^\.github/workflows/ci.yaml'; then
+            find k8s/ -type f -name "*.yaml" -exec sed -i "s|\(image: .*/evaluation-job\):[^ ]*|\1:$SHA|g" {} +
+            echo "Updated evaluation-job to $SHA"
+            echo "eval_job_changed=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "eval_job_changed=false" >> "$GITHUB_OUTPUT"
+          fi
 
       - name: Sync Data ConfigMap
         run: |
@@ -146,8 +183,10 @@ jobs:
 
       - name: Run and wait for Data Ingestion Job
         run: |
-          SHA="${{ needs.prepare-and-gitops.outputs.sha }}"
-          sed -i "s|\(image: .*/data-ingestion\):[^ ]*|\1:$SHA|g" k8s/data-ingestion/job.yaml
+          if [ "${{ needs.prepare-and-gitops.outputs.ingestion_changed }}" = "true" ]; then
+            SHA="${{ needs.prepare-and-gitops.outputs.sha }}"
+            sed -i "s|\(image: .*/data-ingestion\):[^ ]*|\1:$SHA|g" k8s/data-ingestion/job.yaml
+          fi
           
           kubectl delete job gout-ingestion-job -n ${{ env.K8S_NAMESPACE }} --ignore-not-found=true
           kubectl wait --for=delete job/gout-ingestion-job -n ${{ env.K8S_NAMESPACE }} --timeout=60s 2>/dev/null || true
@@ -209,9 +248,12 @@ jobs:
           
           # Cập nhật Testset và SHA từ Job 1 trước khi apply
           TESTSET_PATH="${{ needs.prepare-and-gitops.outputs.testset_path }}"
-          SHA="${{ needs.prepare-and-gitops.outputs.sha }}"
           sed -i "s|value: /app/data/.*\.json.*|value: $TESTSET_PATH|g" k8s/evaluation-job/job.yaml
-          sed -i "s|\(image: .*/evaluation-job\):[^ ]*|\1:$SHA|g" k8s/evaluation-job/job.yaml
+          
+          if [ "${{ needs.prepare-and-gitops.outputs.eval_job_changed }}" = "true" ]; then
+            SHA="${{ needs.prepare-and-gitops.outputs.sha }}"
+            sed -i "s|\(image: .*/evaluation-job\):[^ ]*|\1:$SHA|g" k8s/evaluation-job/job.yaml
+          fi
           
           kubectl apply -f k8s/evaluation-job/job.yaml
           if ! kubectl wait --for=condition=complete job/evaluation-job -n ${{ env.K8S_NAMESPACE }} --timeout=600s; then
