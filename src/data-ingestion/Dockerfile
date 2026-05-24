@@ -13,3 +13,4 @@ COPY src/data-ingestion/ ./
 COPY data/ ./data/
 
 CMD ["python", "ingest.py"]
+# Trigger CI build for CD sync
