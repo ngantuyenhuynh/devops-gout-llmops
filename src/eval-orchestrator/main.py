@@ -3,7 +3,9 @@ from pydantic import BaseModel
 from langchain_huggingface import HuggingFaceEmbeddings
 from langchain_qdrant import QdrantVectorStore
 from qdrant_client import QdrantClient
+from fastapi.responses import StreamingResponse
 import requests
+import json
 
 from prometheus_fastapi_instrumentator import Instrumentator
 from langfuse.decorators import observe, langfuse_context
@@ -85,3 +87,56 @@ TRẢ LỜI:"""
         }
     except Exception as e:
         return {"error": f"Lỗi khi gọi Ollama: {str(e)}"}
+
+@observe(name="Gout_RAG_Pipeline_Stream")
+@app.post("/ask/stream")
+def ask_gout_bot_stream(req: QuestionRequest):
+    langfuse_context.update_current_trace(
+        input=req.question,
+        metadata={"model_used": req.model_name} 
+    )
+
+    try:
+        docs = vector_store.similarity_search(req.question, k=3)
+        context = "\n---\n".join([doc.page_content for doc in docs])
+        sources = list(set([doc.metadata.get("source", "Unknown") for doc in docs]))
+    except Exception as e:
+        # Trả về JSON lỗi (FastAPI tự wrap thành HTTP response chuẩn)
+        return {"error": f"Lỗi khi kết nối Qdrant: {str(e)}"}
+
+    prompt = f"""Bạn là một bác sĩ chuyên khoa về bệnh Gút (Gout). 
+Nhiệm vụ của bạn là trả lời câu hỏi của bệnh nhân DỰA VÀO TÀI LIỆU Y KHOA được cung cấp dưới đây.
+Tuyệt đối không được bịa đặt. Nếu tài liệu không có thông tin, hãy trả lời: "Dựa theo phác đồ hiện tại, tôi không tìm thấy thông tin về vấn đề này."
+
+TÀI LIỆU Y KHOA:
+{context}
+
+CÂU HỎI: {req.question}
+TRẢ LỜI:"""
+
+    payload = {
+        "model": req.model_name or "qwen2.5:1.5b",
+        "prompt": prompt,
+        "stream": True
+    }
+
+    def generate():
+        yield json.dumps({"type": "sources", "sources": sources}) + "\n"
+        
+        full_answer = ""
+        try:
+            with requests.post(OLLAMA_URL, json=payload, timeout=900, stream=True) as response:
+                response.raise_for_status()
+                for line in response.iter_lines():
+                    if line:
+                        chunk = json.loads(line)
+                        if "response" in chunk:
+                            text = chunk["response"]
+                            full_answer += text
+                            yield json.dumps({"type": "chunk", "content": text}) + "\n"
+                        if chunk.get("done"):
+                            langfuse_context.update_current_trace(output=full_answer)
+        except Exception as e:
+            yield json.dumps({"type": "error", "error": f"Lỗi khi gọi Ollama: {str(e)}"}) + "\n"
+
+    return StreamingResponse(generate(), media_type="application/x-ndjson")

@@ -1,1 +1,1 @@
-trigger build all 3
+trigger stream build 4

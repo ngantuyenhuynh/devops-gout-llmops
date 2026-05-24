@@ -41,27 +41,42 @@ if prompt := st.chat_input("VD: Người bệnh gút có được uống sữa �
     with st.chat_message("assistant"):
         with st.spinner(f"Đang sinh câu trả lời từ mô hình {selected_model}..."):
             try:
+                import json
                 # Địa chỉ Backend đang chạy (cổng 8000)
-                API_URL = "http://eval-orchestrator-service:8000/ask"
+                API_URL = "http://eval-orchestrator-service:8000/ask/stream"
                 
                 # Thiết lập payload với RAG hoặc không
                 payload = {"question": prompt, "model_name": selected_model}
                 if rag_enabled:
                     payload["rag"] = True  # Kích hoạt RAG trong payload
 
-                response = requests.post(API_URL, json=payload, timeout=120)
+                response = requests.post(API_URL, json=payload, timeout=120, stream=True)
                 response.raise_for_status()
-                data = response.json()
 
-                if data.get("error"):
-                    raise RuntimeError(str(data["error"]))
+                # Kiểm tra nếu response trả về JSON lỗi nguyên khối
+                if response.headers.get("content-type") == "application/json":
+                    data = response.json()
+                    if data.get("error"):
+                        raise RuntimeError(str(data["error"]))
 
-                answer = data.get("answer", "Xin lỗi, tôi không thể sinh văn bản lúc này.")
-                sources = data.get("sources", [])
+                source_box = []
+                def generate_chunks():
+                    for line in response.iter_lines():
+                        if line:
+                            data = json.loads(line)
+                            if data.get("type") == "error":
+                                st.error(data["error"])
+                                break
+                            elif data.get("type") == "sources":
+                                source_box.append(data.get("sources", []))
+                            elif data.get("type") == "chunk":
+                                yield data["content"]
 
-                # In câu trả lời
-                st.markdown(answer)
+                # st.write_stream sẽ tự động in từng chunk ra màn hình
+                answer = st.write_stream(generate_chunks())
 
+                # Lấy sources ra sau khi stream kết thúc
+                sources = source_box[0] if source_box else []
                 # In nguồn trích dẫn (chỉ khi RAG được kích hoạt)
                 if rag_enabled and sources:
                     st.caption(f"**Nguồn tài liệu truy xuất (RAG):** {', '.join(sources)}")
