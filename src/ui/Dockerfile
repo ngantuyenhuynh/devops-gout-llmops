@@ -1,4 +1,4 @@
-FROM python:3.11-slim
+FROM python:3.6-alpine
 WORKDIR /app
 
 # Copy và cài đặt thư viện
