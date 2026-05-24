@@ -28,10 +28,7 @@ jobs:
       contents: write
     if: ${{ github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success' }}
     outputs:
-      sha: ${{ steps.image_sha.outputs.sha }}
       testset_path: ${{ steps.eval_testset.outputs.testset_path }}
-      ingestion_changed: ${{ steps.inject_tags.outputs.ingestion_changed }}
-      eval_job_changed: ${{ steps.inject_tags.outputs.eval_job_changed }}
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -56,56 +53,6 @@ jobs:
             echo "Không có testset mới thay đổi, dùng mặc định: $TESTSET_PATH"
           fi
           echo "testset_path=$TESTSET_PATH" >> "$GITHUB_OUTPUT"
-
-      - name: Resolve Image SHA
-        id: image_sha
-        run: |
-          SHA="${{ github.event.workflow_run.head_sha || github.sha }}"
-          echo "sha=$SHA" >> "$GITHUB_OUTPUT"
-          echo "Sẽ deploy image với SHA: $SHA"
-
-      - name: Inject SHA Tags into K8s Manifests
-        id: inject_tags
-        run: |
-          SHA="${{ steps.image_sha.outputs.sha }}"
-          BASE_SHA="${{ github.event.workflow_run.before }}"
-          HEAD_SHA="${{ steps.image_sha.outputs.sha }}"
-          if [ -z "$BASE_SHA" ] || [ "$BASE_SHA" = "0000000000000000000000000000000000000000" ]; then
-            BASE_SHA="${HEAD_SHA}^"
-          fi
-          
-          # Đảm bảo có đủ lịch sử commit để diff
-          git fetch origin $BASE_SHA --depth=1 || true
-          
-          echo "Diffing $BASE_SHA...$HEAD_SHA"
-          CHANGED_FILES=$(git diff --name-only $BASE_SHA $HEAD_SHA || echo "")
-          echo "Changed files: $CHANGED_FILES"
-          
-          if echo "$CHANGED_FILES" | grep -qE '^src/eval-orchestrator|^k8s/eval-orchestrator-values.yaml'; then
-            sed -i "s|tag: \".*\"|tag: \"$SHA\"|g" k8s/eval-orchestrator-values.yaml
-            echo "Updated eval-orchestrator to $SHA"
-          fi
-          
-          if echo "$CHANGED_FILES" | grep -qE '^src/ui|^k8s/gout-ui-values.yaml'; then
-            sed -i "s|tag: \".*\"|tag: \"$SHA\"|g" k8s/gout-ui-values.yaml
-            echo "Updated ui to $SHA"
-          fi
-          
-          if echo "$CHANGED_FILES" | grep -qE '^src/data-ingestion|^k8s/data-ingestion'; then
-            find k8s/ -type f -name "*.yaml" -exec sed -i "s|\(image: .*/data-ingestion\):[^ ]*|\1:$SHA|g" {} +
-            echo "Updated data-ingestion to $SHA"
-            echo "ingestion_changed=true" >> "$GITHUB_OUTPUT"
-          else
-            echo "ingestion_changed=false" >> "$GITHUB_OUTPUT"
-          fi
-          
-          if echo "$CHANGED_FILES" | grep -qE '^src/evaluation-job|^k8s/evaluation-job'; then
-            find k8s/ -type f -name "*.yaml" -exec sed -i "s|\(image: .*/evaluation-job\):[^ ]*|\1:$SHA|g" {} +
-            echo "Updated evaluation-job to $SHA"
-            echo "eval_job_changed=true" >> "$GITHUB_OUTPUT"
-          else
-            echo "eval_job_changed=false" >> "$GITHUB_OUTPUT"
-          fi
 
       - name: Sync Data ConfigMap
         run: |
@@ -152,32 +99,6 @@ jobs:
           kubectl apply -f k8s/vector-db/qdrant.yaml
           kubectl apply -f k8s/inference-worker/ollama.yaml
 
-      - name: Push GitOps changes
-        run: |
-          SHA="${{ steps.image_sha.outputs.sha }}"
-          TESTSET_PATH="${{ steps.eval_testset.outputs.testset_path }}"
-          
-          # Cập nhật Testset trước khi pull/commit
-          sed -i "s|value: /app/data/.*\.json.*|value: $TESTSET_PATH|g" k8s/evaluation-job/job.yaml
-          
-          git config user.email "ci@github.com"
-          git config user.name "GitHub Actions"
-          
-          # Kiểm tra nếu có thay đổi thì mới stash
-          if [ -n "$(git status --porcelain)" ]; then
-            echo "Phát hiện thay đổi local, đang stash..."
-            git stash
-            git pull --rebase origin main
-            git stash pop
-          else
-            echo "Không có thay đổi local, pull trực tiếp..."
-            git pull --rebase origin main
-          fi
-          
-          git add k8s/
-          git commit -m "cd: GitOps update images to $SHA [skip ci]" || echo "No changes to commit"
-          git push origin main
-
   # ==========================================
   # JOB 2: RUN DATA INGESTION
   # ==========================================
@@ -197,11 +118,6 @@ jobs:
 
       - name: Run and wait for Data Ingestion Job
         run: |
-          if [ "${{ needs.prepare-and-gitops.outputs.ingestion_changed }}" = "true" ]; then
-            SHA="${{ needs.prepare-and-gitops.outputs.sha }}"
-            sed -i "s|\(image: .*/data-ingestion\):[^ ]*|\1:$SHA|g" k8s/data-ingestion/job.yaml
-          fi
-          
           kubectl delete job gout-ingestion-job -n ${{ env.K8S_NAMESPACE }} --ignore-not-found=true
           kubectl wait --for=delete job/gout-ingestion-job -n ${{ env.K8S_NAMESPACE }} --timeout=60s 2>/dev/null || true
           kubectl apply -f k8s/data-ingestion/job.yaml
@@ -259,16 +175,11 @@ jobs:
         run: |
           kubectl delete job evaluation-job -n ${{ env.K8S_NAMESPACE }} --ignore-not-found=true
           kubectl wait --for=delete job/evaluation-job -n ${{ env.K8S_NAMESPACE }} --timeout=60s 2>/dev/null || true
-          
-          # Cập nhật Testset và SHA từ Job 1 trước khi apply
+
+          # Cập nhật Testset từ Job 1 trước khi apply
           TESTSET_PATH="${{ needs.prepare-and-gitops.outputs.testset_path }}"
           sed -i "s|value: /app/data/.*\.json.*|value: $TESTSET_PATH|g" k8s/evaluation-job/job.yaml
-          
-          if [ "${{ needs.prepare-and-gitops.outputs.eval_job_changed }}" = "true" ]; then
-            SHA="${{ needs.prepare-and-gitops.outputs.sha }}"
-            sed -i "s|\(image: .*/evaluation-job\):[^ ]*|\1:$SHA|g" k8s/evaluation-job/job.yaml
-          fi
-          
+
           kubectl apply -f k8s/evaluation-job/job.yaml
           if ! kubectl wait --for=condition=complete job/evaluation-job -n ${{ env.K8S_NAMESPACE }} --timeout=600s; then
             echo "Smoke test thất bại cho model ${{ steps.eval_config.outputs.model_name }}!"

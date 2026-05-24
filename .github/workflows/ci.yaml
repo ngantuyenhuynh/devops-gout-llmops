@@ -11,6 +11,9 @@ on:
   pull_request:
     branches: [ "main" ]
 
+permissions:
+  contents: write
+
 jobs:
   # Xác định thư mục nào có thay đổi
   changes:
@@ -98,3 +101,60 @@ jobs:
       build_context: "."
       dockerfile_path: "./src/evaluation-job/Dockerfile"
     secrets: inherit
+
+  # CẬP NHẬT TAG TRONG K8S MANIFESTS (GitOps)
+  gitops-update:
+    name: "GitOps: Update K8s Image Tags"
+    runs-on: ubuntu-latest
+    # Chỉ chạy khi push vào main (không chạy trên PR)
+    if: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' }}
+    needs: [changes, build-orchestrator, build-ui, build-ingestion, build-eval-job]
+    # Không bị block khi các build job bị skip (result: skipped is ok)
+    permissions:
+      contents: write
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Update K8s image tags for changed services
+        run: |
+          SHA="${{ github.sha }}"
+          echo "Updating tags for SHA: $SHA"
+          CHANGED=false
+
+          if [ "${{ needs.changes.outputs.orchestrator }}" = "true" ]; then
+            sed -i "s|tag: \".*\"|tag: \"$SHA\"|g" k8s/eval-orchestrator-values.yaml
+            echo "Updated eval-orchestrator to $SHA"
+            CHANGED=true
+          fi
+
+          if [ "${{ needs.changes.outputs.ui }}" = "true" ]; then
+            sed -i "s|tag: \".*\"|tag: \"$SHA\"|g" k8s/gout-ui-values.yaml
+            echo "Updated gout-ui to $SHA"
+            CHANGED=true
+          fi
+
+          if [ "${{ needs.changes.outputs.ingestion }}" = "true" ]; then
+            find k8s/ -type f -name "*.yaml" -exec sed -i "s|\(image: .*/data-ingestion\):[^ ]*|\1:$SHA|g" {} +
+            echo "Updated data-ingestion to $SHA"
+            CHANGED=true
+          fi
+
+          if [ "${{ needs.changes.outputs.eval_job }}" = "true" ]; then
+            find k8s/ -type f -name "*.yaml" -exec sed -i "s|\(image: .*/evaluation-job\):[^ ]*|\1:$SHA|g" {} +
+            echo "Updated evaluation-job to $SHA"
+            CHANGED=true
+          fi
+
+          if [ "$CHANGED" = "true" ]; then
+            git config user.email "ci@github.com"
+            git config user.name "GitHub Actions"
+            git add k8s/
+            git commit -m "ci: GitOps update images to $SHA [skip ci]"
+            git push origin main
+            echo "GitOps commit pushed."
+          else
+            echo "No image tags changed, skipping GitOps commit."
+          fi
