@@ -12,7 +12,7 @@ spec:
       - name: artifact-registry-key
       containers:
       - name: evaluation-job
-        image: asia-southeast1-docker.pkg.dev/macro-mender-494903-v0/gout-llmops-repo/evaluation-job:2eeb2ae212823f65b2007e1ee769bdb0fc6f57ca
+        image: asia-southeast1-docker.pkg.dev/macro-mender-494903-v0/gout-llmops-repo/evaluation-job:c786b534ce03248af71b08e1acfcf05cd1c45fed
         imagePullPolicy: Always
         env:
         - name: ORCHESTRATOR_URL
