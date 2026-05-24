@@ -1,1 +1,1 @@
-trigger build to fix langfuse trace tracking in stream
+trigger build to fix trace scope

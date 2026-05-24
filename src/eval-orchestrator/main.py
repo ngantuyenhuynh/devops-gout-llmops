@@ -120,10 +120,10 @@ TRẢ LỜI:"""
         "stream": True
     }
 
+    trace_id = langfuse_context.get_current_trace_id()
+
     def generate():
         yield json.dumps({"type": "sources", "sources": sources}) + "\n"
-        
-        trace_id = langfuse_context.get_current_trace_id()
         
         full_answer = ""
         try:
