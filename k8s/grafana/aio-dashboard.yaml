@@ -73,10 +73,10 @@ data:
           "gridPos": { "h": 6, "w": 24, "x": 0, "y": 15 },
           "datasource": { "type": "prometheus", "uid": "prometheus" },
           "options": { "sortBy": [{ "displayName": "Pod" }] },
-          "transformations": [{ "id": "organize", "options": { "renameByName": { "pod": "Pod", "Value": "Restarts (1h)" } } }],
+          "transformations": [{ "id": "organize", "options": { "renameByName": { "pod": "Pod", "Value": "Current Restarts" } } }],
           "targets": [
             {
-              "expr": "sum by(pod) (increase(kube_pod_container_status_restarts_total{namespace=\"gout-eval\"}[1h]))",
+              "expr": "sum by(pod) (kube_pod_container_status_restarts_total{namespace=\"gout-eval\"})",
               "legendFormat": "{{pod}}",
               "instant": true,
               "refId": "A"
