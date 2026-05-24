@@ -75,7 +75,7 @@ def append_jsonl(path: Path, record: dict[str, Any]) -> None:
         with path.open("a", encoding="utf-8") as f:
             f.write(json.dumps(record, ensure_ascii=False) + "\n")
 
-def ask_model(question: str, model_name: str, max_retries: int = 3) -> dict[str, Any]:
+def ask_model(question: str, model_name: str, max_retries: int = 15) -> dict[str, Any]:
     import time
     payload = {"question": question, "model_name": model_name}
     
@@ -90,8 +90,8 @@ def ask_model(question: str, model_name: str, max_retries: int = 3) -> dict[str,
         except (requests.exceptions.ConnectionError, requests.exceptions.Timeout, RuntimeError) as e:
             if attempt == max_retries - 1:
                 raise
-            print(f"\n[WARNING] Lỗi kết nối (có thể do timeout/model đang load). Thử lại lần {attempt + 2}/{max_retries} sau 5 giây... Chi tiết: {e}")
-            time.sleep(5)
+            print(f"\n[WARNING] Lỗi kết nối (có thể do timeout/model đang load). Thử lại lần {attempt + 2}/{max_retries} sau 10 giây... Chi tiết: {e}")
+            time.sleep(10)
 
 
 def extract_contexts(result: dict[str, Any]) -> list[str]:
