@@ -13,6 +13,8 @@ spec:
       labels:
         app: qdrant
     spec:
+      nodeSelector:
+        role: worker-ai
       containers:
       - name: qdrant
         image: qdrant/qdrant:v1.13.2
@@ -25,6 +27,14 @@ spec:
           limits:
             memory: "2Gi"
             cpu: "1"
+        volumeMounts:
+        - name: qdrant-storage
+          mountPath: /qdrant/storage
+      volumes:
+      - name: qdrant-storage
+        hostPath:
+          path: /mnt/data/qdrant
+          type: DirectoryOrCreate
 ---
 apiVersion: v1
 kind: Service

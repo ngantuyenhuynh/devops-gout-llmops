@@ -1,6 +1,6 @@
 image:
   repository: asia-southeast1-docker.pkg.dev/macro-mender-494903-v0/gout-llmops-repo/eval-orchestrator
-  tag: "cd41aa3a61fdd38a0b54b2e47bdb0e0369682a74"
+  tag: "9fd00e819cd0820b5d6516e10cf650a3af50bf84"
 containerPort: 8000
 service:
   port: 8000
@@ -14,7 +14,15 @@ resources:
 
 monitoring:
   enabled: true
+env:
+  LANGFUSE_HOST: "https://cloud.langfuse.com"
 envFromSecrets:
   - name: OPENAI_API_KEY
     secretName: openai-secret
     secretKey: OPENAI_API_KEY
+  - name: LANGFUSE_SECRET_KEY
+    secretName: langfuse-secret
+    secretKey: secret-key
+  - name: LANGFUSE_PUBLIC_KEY
+    secretName: langfuse-secret
+    secretKey: public-key

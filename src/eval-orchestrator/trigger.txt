@@ -1,1 +1,1 @@
-trigger build for speed optimization
+trigger build to fix langfuse input update

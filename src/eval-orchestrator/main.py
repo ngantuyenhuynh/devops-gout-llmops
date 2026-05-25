@@ -120,6 +120,8 @@ TRẢ LỜI:"""
         "stream": True
     }
 
+    trace_id = langfuse_context.get_current_trace_id()
+
     def generate():
         yield json.dumps({"type": "sources", "sources": sources}) + "\n"
         
@@ -136,9 +138,17 @@ TRẢ LỜI:"""
                             yield json.dumps({"type": "chunk", "content": text}) + "\n"
                         if chunk.get("done"):
                             try:
-                                langfuse_context.update_current_trace(output=full_answer)
+                                from langfuse import Langfuse
+                                lf = Langfuse()
+                                lf.trace(
+                                    id=trace_id,
+                                    input=req.question,
+                                    output=full_answer,
+                                    metadata={"model_used": req.model_name}
+                                )
+                                lf.flush()
                             except Exception as trace_err:
-                                print(f"Warning: Langfuse trace update failed: {trace_err}")
+                                print(f"Warning: Langfuse manual trace update failed: {trace_err}")
         except Exception as e:
             yield json.dumps({"type": "error", "error": f"Lỗi khi gọi Ollama: {str(e)}"}) + "\n"
 
