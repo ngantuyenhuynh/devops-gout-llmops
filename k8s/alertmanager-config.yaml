@@ -4,7 +4,7 @@ metadata:
   name: telegram-config
   namespace: monitoring
   labels:
-    release: monitoring-stack # Khớp với label trong prometheus-stack-argocd.yaml
+    release: prometheus-stack # Phải khớp với tên release của Helm (prometheus-stack)
 spec:
   route:
     receiver: 'telegram-receiver'
