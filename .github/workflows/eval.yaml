@@ -120,3 +120,27 @@ jobs:
           name: full-eval-results-${{ github.run_id }}
           path: eval-artifacts/
           retention-days: 90
+
+      - name: Send Telegram Notification (Success)
+        if: success()
+        uses: appleboy/telegram-action@master
+        with:
+          to: ${{ secrets.TELEGRAM_CHAT_ID || '-5148187096' }}
+          token: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          format: html
+          message: |
+            ✅ <b>Full RAG Evaluation Success!</b>
+            🕒 Quá trình đánh giá toàn diện đã hoàn tất.
+            🔗 <a href="https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}">Xem báo cáo chi tiết</a>
+
+      - name: Send Telegram Notification (Failure)
+        if: failure()
+        uses: appleboy/telegram-action@master
+        with:
+          to: ${{ secrets.TELEGRAM_CHAT_ID || '-5148187096' }}
+          token: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          format: html
+          message: |
+            ❌ <b>Full RAG Evaluation Failed!</b>
+            ⚠️ Quá trình đánh giá toàn diện đã gặp sự cố hoặc timeout!
+            🔗 <a href="https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}">Xem log lỗi ngay</a>

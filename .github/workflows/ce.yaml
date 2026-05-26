@@ -92,3 +92,27 @@ jobs:
           
           echo "✅ Bài thực nghiệm CE thành công tốt đẹp!"
           kubectl logs job/evaluation-job -n ${{ env.K8S_NAMESPACE }} || true
+
+      - name: Send Telegram Notification (Success)
+        if: success()
+        uses: appleboy/telegram-action@master
+        with:
+          to: ${{ secrets.TELEGRAM_CHAT_ID || '-5148187096' }}
+          token: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          format: html
+          message: |
+            ✅ <b>Continuous Evaluation Success!</b>
+            🕒 Quá trình chấm điểm tự động (khi thay đổi data) đã hoàn tất.
+            🔗 <a href="https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}">Xem chi tiết</a>
+
+      - name: Send Telegram Notification (Failure)
+        if: failure()
+        uses: appleboy/telegram-action@master
+        with:
+          to: ${{ secrets.TELEGRAM_CHAT_ID || '-5148187096' }}
+          token: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          format: html
+          message: |
+            ❌ <b>Continuous Evaluation Failed!</b>
+            ⚠️ Bài đánh giá mô hình khi update data bị lỗi hoặc không qua được Quality Gate.
+            🔗 <a href="https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}">Xem lỗi ngay</a>
