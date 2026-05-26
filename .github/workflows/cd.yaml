@@ -218,3 +218,16 @@ jobs:
           name: eval-results-${{ needs.prepare-and-gitops.outputs.sha }}
           path: eval-artifacts/
           retention-days: 30
+
+      - name: Send Telegram Notification
+        if: success()
+        uses: appleboy/telegram-action@master
+        with:
+          to: ${{ secrets.TELEGRAM_CHAT_ID || '-5148187096' }}
+          token: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          format: html
+          message: |
+            ✅ <b>CD Pipeline Success!</b>
+            📦 <b>Model:</b> ${{ steps.eval_config.outputs.model_name }}
+            🚀 <b>Smoke Test:</b> Passed
+            🔗 <a href="https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}">Xem chi tiết workflow</a>
