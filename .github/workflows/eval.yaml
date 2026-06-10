@@ -1,9 +1,9 @@
 name: Full RAG Evaluation
 
 on:
-  schedule:
+  # schedule:
     # Run nightly at 01:00 UTC for continuous evaluation.
-    - cron: "0 1 * * *"
+    # - cron: "0 1 * * *"
   workflow_dispatch:
 
 permissions:
